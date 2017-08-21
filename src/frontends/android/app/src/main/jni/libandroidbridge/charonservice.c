@@ -440,6 +440,7 @@ static bool charonservice_register(plugin_t *plugin, plugin_feature_t *feature,
 	private_charonservice_t *this = (private_charonservice_t*)charonservice;
 	if (reg)
 	{
+		this->creds->load_crls(this->creds);
 		lib->credmgr->add_set(lib->credmgr, &this->creds->set);
 		charon->attributes->add_handler(charon->attributes,
 										&this->attr->handler);
@@ -526,6 +527,7 @@ static void charonservice_init(JNIEnv *env, jobject service, jobject builder,
 		PLUGIN_CALLBACK(charonservice_register, NULL),
 			PLUGIN_PROVIDE(CUSTOM, "android-backend"),
 				PLUGIN_DEPENDS(CUSTOM, "libcharon"),
+				PLUGIN_DEPENDS(CERT_DECODE, CERT_X509_CRL),
 		PLUGIN_REGISTER(FETCHER, android_fetcher_create),
 			PLUGIN_PROVIDE(FETCHER, "http://"),
 			PLUGIN_PROVIDE(FETCHER, "https://"),
@@ -544,7 +546,7 @@ static void charonservice_init(JNIEnv *env, jobject service, jobject builder,
 			.get_network_manager = _get_network_manager,
 		},
 		.attr = android_attr_create(),
-		.creds = android_creds_create(),
+		.creds = android_creds_create(appdir),
 		.builder = vpnservice_builder_create(builder),
 		.network_manager = network_manager_create(service),
 		.sockets = linked_list_create(),
