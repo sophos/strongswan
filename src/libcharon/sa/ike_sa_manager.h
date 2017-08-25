@@ -109,6 +109,17 @@ struct ike_sa_manager_t {
 									 peer_cfg_t *peer_cfg);
 
 	/**
+	 * Reset initiator SPI.
+	 *
+	 * Allocate a new initiator SPI for the given IKE_SA in state IKE_CONNECTING
+	 * or IKE_CREATED and update internal data.
+	 *
+	 * @param ike_sa			IKE_SA to update
+	 * @return					TRUE if SPI successfully changed
+	 */
+	bool (*new_initiator_spi)(ike_sa_manager_t* this, ike_sa_t *ike_sa);
+
+	/**
 	 * Check for duplicates of the given IKE_SA.
 	 *
 	 * Measures are taken according to the uniqueness policy of the IKE_SA.
