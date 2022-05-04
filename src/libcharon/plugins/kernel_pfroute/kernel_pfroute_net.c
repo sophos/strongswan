@@ -58,12 +58,12 @@
 /** delay before reinstalling routes (ms) */
 #define ROUTE_DELAY 100
 
-/** MTU to set when creating a new TUN device */
-#define TUN_DEFAULT_MTU 1400
-
 /** Hack to work around issue where new VIP is sent but not used
     REMOVE WHEN FIXED */
 #define IGNORE_VIP_CHANGES  1
+
+/** default MTU for TUN devices */
+#define TUN_DEFAULT_MTU 1400
 
 typedef struct addr_entry_t addr_entry_t;
 
@@ -474,6 +474,11 @@ struct private_kernel_pfroute_net_t
 	 * Time in ms to wait for IP addresses to appear/disappear
 	 */
 	int vip_wait;
+
+	/**
+	 * MTU to set on TUN devices
+	 */
+	uint32_t mtu;
 
 	/**
 	 * whether to actually install virtual IPs
@@ -1343,18 +1348,13 @@ METHOD(kernel_net_t, add_ip, status_t,
 	{
 		prefix = vip->get_address(vip).len * 8;
 	}
-	if (!tun_dev->up(tun_dev) || !tun_dev->set_address(tun_dev, vip, prefix))
+	if (!tun->up(tun) || !tun->set_address(tun, vip, prefix) ||
+		!tun->set_mtu(tun, this->mtu))
 	{
-		tun_dev->destroy(tun_dev);
+		tun->destroy(tun);
 		return FAILED;
 	}
-	if (!tun_dev->set_mtu(tun_dev, TUN_DEFAULT_MTU))
-	{
-		/* not a fatal error */
-		DBG1(DBG_KNL, "failed to set MTU to %d on %s",
-			 TUN_DEFAULT_MTU, tun_dev->get_name(tun_dev));
-	}
-
+	
 	/* wait until address appears */
 	this->mutex->lock(this->mutex);
 	while (!timeout && !get_interface_name(this, vip, NULL))
@@ -2216,6 +2216,8 @@ kernel_pfroute_net_t *kernel_pfroute_net_create()
 		.roam_lock = spinlock_create(),
 		.vip_wait = lib->settings->get_int(lib->settings,
 						"%s.plugins.kernel-pfroute.vip_wait", 1000, lib->ns),
+		.mtu = lib->settings->get_int(lib->settings,
+						"%s.plugins.kernel-pfroute.mtu", TUN_DEFAULT_MTU, lib->ns),
 		.install_virtual_ip = lib->settings->get_bool(lib->settings,
 						"%s.install_virtual_ip", TRUE, lib->ns),
 	);

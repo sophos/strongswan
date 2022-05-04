@@ -2,7 +2,7 @@
 
 PKG = wolfssl
 SRC = https://github.com/wolfSSL/$(PKG).git
-REV = v4.8.0-stable
+REV = v5.1.1-stable
 
 NUM_CPUS := $(shell getconf _NPROCESSORS_ONLN)
 
@@ -19,6 +19,7 @@ CONFIG_OPTS = \
 	--enable-silent-rules \
 	--enable-aesccm \
 	--enable-aesctr \
+	--enable-aescfb \
 	--enable-camellia \
 	--enable-curve25519 \
 	--enable-curve448 \
@@ -39,7 +40,7 @@ all: install
 	@touch $@
 
 .$(PKG)-checkout-$(REV): .$(PKG)-cloned
-	cd $(PKG) && git fetch && git checkout $(REV)
+	cd $(PKG) && git fetch --tags && git checkout $(REV)
 	@rm -f .$(PKG)-checkout-* && touch $@
 
 .$(PKG)-built-$(REV): .$(PKG)-checkout-$(REV)

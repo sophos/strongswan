@@ -105,7 +105,7 @@ static struct {
 	  "\xaf\xca\xd7\x13\x68\xa1\xf1\xc9\x6b\x86\x96\xfc\x77\x57\x01\x00"},
 
 	/* CISCO-UNITY, similar to DPD the last two bytes indicate the version */
-	{ "Cisco Unity", EXT_CISCO_UNITY, FALSE, TRUE, 16,
+	{ "Cisco Unity", EXT_CISCO_UNITY, FALSE, FALSE, 16,
 	  "\x12\xf5\xf2\x8c\x45\x71\x68\xa9\x70\x2d\x9f\xe2\x74\xcc\x01\x00"},
 
 	/* Proprietary IKE fragmentation extension. Capabilities are handled
@@ -115,13 +115,15 @@ static struct {
 	  "\x40\x48\xb7\xd5\x6e\xbc\xe8\x85\x25\xe7\xde\x7f\x00\xd6\xc2\xd3\x80\x00\x00\x00"},
 
 	/* Windows peers send this VID and a version number */
-	{ "MS NT5 ISAKMPOAKLEY", EXT_MS_WINDOWS, FALSE, TRUE, 20,
+	{ "MS NT5 ISAKMPOAKLEY", EXT_MS_WINDOWS, FALSE, TRUE, 16,
 	  "\x1e\x2b\x51\x69\x05\x99\x1c\x7d\x7c\x96\xfc\xbf\xb5\x87\xe4\x61\x00\x00\x00\x00"},
 
-	{ "Cisco VPN Concentrator", 0, FALSE, TRUE, 16,
-	  "\x1f\x07\xf7\x0e\xaa\x65\x14\xd3\xb0\xfa\x96\x54\x2a"},
+	/* Truncated MD5("ALTIGA GATEWAY") plus two version bytes */
+	{ "Cisco VPN Concentrator", 0, FALSE, TRUE, 14,
+	  "\x1f\x07\xf7\x0e\xaa\x65\x14\xd3\xb0\xfa\x96\x54\x2a\x50\x00\x00"},
 
-	{ "Cisco VPN 3000 client", 0, FALSE, FALSE, 20,
+	/* MD5("ALTIGA NETWORKS") */
+	{ "Cisco VPN 3000 client", 0, FALSE, FALSE, 16,
 	  "\xf6\xf7\xef\xc7\xf5\xae\xb8\xcb\x15\x8c\xb9\xd0\x94\xba\x69\xe7"},
 
 	{ "KAME/racoon", 0, FALSE, FALSE, 16,
@@ -240,18 +242,24 @@ static const uint32_t fragmentation_ike = 0x80000000;
 
 static bool is_known_vid(chunk_t data, int i)
 {
-	if (vendor_ids[i].extension == EXT_IKE_FRAGMENTATION)
+	switch (vendor_ids[i].extension)
 	{
-		if (data.len >= 16 && memeq(data.ptr, vendor_ids[i].id, 16))
-		{
-			switch (data.len)
+		case EXT_IKE_FRAGMENTATION:
+			if (data.len >= 16 && memeq(data.ptr, vendor_ids[i].id, 16))
 			{
-				case 16:
-					return TRUE;
-				case 20:
-					return untoh32(&data.ptr[16]) & fragmentation_ike;
+				switch (data.len)
+				{
+					case 16:
+						return TRUE;
+					case 20:
+						return untoh32(&data.ptr[16]) & fragmentation_ike;
+				}
 			}
-		}
+			return FALSE;
+		case EXT_CISCO_UNITY:
+			return data.len == 16 && memeq(data.ptr, vendor_ids[i].id, 14);
+		default:
+			break;
 	}
 	if (vendor_ids[i].prefix)
 	{
