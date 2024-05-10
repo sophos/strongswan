@@ -13,6 +13,7 @@ endif
 
 libstrongswan_osx_attr_la_SOURCES = \
 	osx_attr_plugin.c osx_attr_plugin.h \
+	osx_attr_apple_api_wrapper.c osx_attr_apple_api_wrapper.h \
 	osx_attr_handler.c osx_attr_handler.h
 
 libstrongswan_osx_attr_la_LDFLAGS = -module -avoid-version \

@@ -41,7 +41,9 @@
 #include <processing/jobs/callback_job.h>
 
 #include <CoreFoundation/CoreFoundation.h>
-#include <SystemConfiguration/SystemConfiguration.h>
+#include <SystemConfiguration/SCDynamicStore.h>
+#include <SystemConfiguration/SCDynamicStoreKey.h>
+#include <SystemConfiguration/SCSchemaDefinitions.h>
 
 #ifndef HAVE_STRUCT_SOCKADDR_SA_LEN
 #error Cannot compile this plugin on systems where 'struct sockaddr' has no sa_len member.

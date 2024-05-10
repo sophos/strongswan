@@ -40,12 +40,12 @@
  */
 
 #include "osx_attr_handler.h"
+#include "osx_attr_apple_api_wrapper.h"
 
 #include <networking/host.h>
 #include <utils/debug.h>
 #include <threading/mutex.h>
 
-#include <SystemConfiguration/SystemConfiguration.h>
 #include <SystemConfiguration/SCDynamicStore.h>
 
 #define SERVICE_ID  "strongswan"
@@ -172,7 +172,7 @@ static const char *last_err_str()
 	{
 		memset(buf, 0, sizeof(buf));
 
-		err_ref = SCCopyLastError();
+		err_ref = osx_attr_wrapper_for_SCCopyLastError();
 		if ( !err_ref )
 		{
 			break;
