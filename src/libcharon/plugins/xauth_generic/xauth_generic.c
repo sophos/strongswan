@@ -102,6 +102,27 @@ METHOD(xauth_method_t, process_peer, status_t,
 							PLV1_CONFIGURATION_ATTRIBUTE, attr->get_type(attr),
 							shared->get_key(shared)));
 				shared->destroy(shared);
+
+				shared = lib->credmgr->get_shared(lib->credmgr,
+					SHARED_SSO_FLAG,
+					this->peer,
+					this->server);
+
+				if (!shared)
+				{
+					DBG1(DBG_IKE, "no XAuth %s found for '%Y' - '%Y'", "SSO_Flag",
+						this->peer, this->server);
+					enumerator->destroy(enumerator);
+					cp->destroy(cp);
+					return FAILED;
+				}
+
+				cp->add_attribute(cp, configuration_attribute_create_chunk(
+					PLV1_CONFIGURATION_ATTRIBUTE, XAUTH_SSO_FLAG,
+					shared->get_key(shared)));
+
+				shared->destroy(shared);
+
 				break;
 			default:
 				break;

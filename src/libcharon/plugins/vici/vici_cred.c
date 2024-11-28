@@ -432,6 +432,12 @@ CALLBACK(load_shared, vici_message_t*,
 	{
 		type = SHARED_EAP;
 	}
+
+	else if (strcaseeq(str, "sso_flag"))
+	{
+		type = SHARED_SSO_FLAG;
+	}
+
 	else if (strcaseeq(str, "ntlm"))
 	{
 		type = SHARED_NT_HASH;

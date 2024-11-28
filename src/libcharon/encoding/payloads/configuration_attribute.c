@@ -197,6 +197,7 @@ METHOD(payload_t, verify, status_t,
 		case UNITY_FW_TYPE:
 		case UNITY_BACKUP_SERVERS:
 		case UNITY_DDNS_HOSTNAME:
+		case XAUTH_SSO_FLAG:
 			/* any length acceptable */
 			break;
 		default:

@@ -15,7 +15,7 @@
 
 #include "shared_key.h"
 
-ENUM(shared_key_type_names, SHARED_ANY, SHARED_PPK,
+ENUM(shared_key_type_names, SHARED_ANY, SHARED_SSO_FLAG,
 	"ANY",
 	"IKE",
 	"EAP",
@@ -23,6 +23,7 @@ ENUM(shared_key_type_names, SHARED_ANY, SHARED_PPK,
 	"PIN",
 	"NTLM",
 	"PPK",
+	"SSO_FLAG",
 );
 
 typedef struct private_shared_key_t private_shared_key_t;

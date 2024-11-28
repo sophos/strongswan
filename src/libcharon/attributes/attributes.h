@@ -72,6 +72,8 @@ enum configuration_attribute_type_t {
 	XAUTH_STATUS            = 16527,
 	XAUTH_NEXT_PIN          = 16528,
 	XAUTH_ANSWER            = 16529,
+	/* proprietary Sophos attributes */
+	XAUTH_SSO_FLAG          = 17001,
 	/* proprietary Microsoft attributes */
 	INTERNAL_IP4_SERVER     = 23456,
 	INTERNAL_IP6_SERVER     = 23457,

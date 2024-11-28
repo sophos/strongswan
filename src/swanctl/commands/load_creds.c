@@ -677,6 +677,7 @@ static bool load_secret(load_ctx_t *ctx, char *section)
 		"pkcs8",
 		"pkcs12",
 		"token",
+		"sso_flag",
 	};
 
 	for (i = 0; i < countof(types); i++)
@@ -693,7 +694,7 @@ static bool load_secret(load_ctx_t *ctx, char *section)
 		return FALSE;
 	}
 	if (!streq(type, "eap") && !streq(type, "xauth") && !streq(type, "ntlm") &&
-		!streq(type, "ike") && !streq(type, "ppk"))
+		!streq(type, "ike") && !streq(type, "ppk") && !streq(type, "sso_flag"))
 	{	/* skip non-shared secrets */
 		return TRUE;
 	}

@@ -55,7 +55,9 @@ ENUM_NEXT(configuration_attribute_type_names, XAUTH_TYPE, XAUTH_ANSWER, INTERNAL
 	"XAUTH_STATUS",
 	"XAUTH_NEXT_PIN",
 	"XAUTH_ANSWER");
-ENUM_NEXT(configuration_attribute_type_names, INTERNAL_IP4_SERVER, INTERNAL_IP6_SERVER, XAUTH_ANSWER,
+ENUM_NEXT(configuration_attribute_type_names, XAUTH_SSO_FLAG, XAUTH_SSO_FLAG, XAUTH_ANSWER,
+	"XAUTH_SSO_FLAG");
+ENUM_NEXT(configuration_attribute_type_names, INTERNAL_IP4_SERVER, INTERNAL_IP6_SERVER, XAUTH_SSO_FLAG,
 	"INTERNAL_IP4_SERVER",
 	"INTERNAL_IP6_SERVER");
 ENUM_NEXT(configuration_attribute_type_names, UNITY_BANNER, UNITY_DDNS_HOSTNAME, INTERNAL_IP6_SERVER,
@@ -110,7 +112,9 @@ ENUM_NEXT(configuration_attribute_type_short_names, XAUTH_TYPE, XAUTH_ANSWER, IN
 	"X_STATUS",
 	"X_PIN",
 	"X_ANSWER");
-ENUM_NEXT(configuration_attribute_type_short_names, INTERNAL_IP4_SERVER, INTERNAL_IP6_SERVER, XAUTH_ANSWER,
+ENUM_NEXT(configuration_attribute_type_short_names, XAUTH_SSO_FLAG, XAUTH_SSO_FLAG, XAUTH_ANSWER,
+	"X_SSO");
+ENUM_NEXT(configuration_attribute_type_short_names, INTERNAL_IP4_SERVER, INTERNAL_IP6_SERVER, XAUTH_SSO_FLAG,
 	"SRV",
 	"SRV6");
 ENUM_NEXT(configuration_attribute_type_short_names, UNITY_BANNER, UNITY_DDNS_HOSTNAME, INTERNAL_IP6_SERVER,

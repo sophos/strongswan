@@ -45,6 +45,8 @@ enum shared_key_type_t {
 	SHARED_NT_HASH,
 	/** Postquantum Preshared Key */
 	SHARED_PPK,
+	/*Key for SSO flag*/
+	SHARED_SSO_FLAG,
 };
 
 /**
