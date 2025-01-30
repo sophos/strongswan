@@ -1318,8 +1318,8 @@ static void process_acquire(private_kernel_pfkey_ipsec_t *this,
 							struct sadb_msg* msg)
 {
 	pfkey_msg_t response;
+	kernel_acquire_data_t data = {};
 	uint32_t index, reqid = 0;
-	traffic_selector_t *src_ts, *dst_ts;
 	policy_entry_t *policy;
 	policy_sa_t *sa;
 
@@ -1363,10 +1363,16 @@ static void process_acquire(private_kernel_pfkey_ipsec_t *this,
 		this->mutex->unlock(this->mutex);
 	}
 
-	src_ts = sadb_address2ts(response.src);
-	dst_ts = sadb_address2ts(response.dst);
+	if (reqid)
+	{
+		data.src = sadb_address2ts(response.src);
+		data.dst = sadb_address2ts(response.dst);
 
-	charon->kernel->acquire(charon->kernel, reqid, src_ts, dst_ts);
+		charon->kernel->acquire(charon->kernel, reqid, &data);
+
+		data.src->destroy(data.src);
+		data.dst->destroy(data.dst);
+	}
 }
 
 /**
@@ -1954,6 +1960,12 @@ METHOD(kernel_ipsec_t, update_sa, status_t,
 	size_t len;
 	status_t status = FAILED;
 
+	if (data->new_reqid)
+	{
+		DBG1(DBG_KNL, "unable to update SAD entry with SPI %.8x: reqid "
+			 "change is not supported", ntohl(id->spi));
+		return NOT_SUPPORTED;
+	}
 #ifndef SADB_X_EXT_NEW_ADDRESS_SRC
 	/* we can't update the SA if any of the ip addresses have changed.
 	 * that's because we can't use SADB_UPDATE and by deleting and readding the
@@ -2339,8 +2351,13 @@ static void add_exclude_route(private_kernel_pfkey_ipsec_t *this,
 		{
 			char *if_name = NULL;
 
-			if (charon->kernel->get_interface(charon->kernel, src, &if_name) &&
-				charon->kernel->add_route(charon->kernel,
+			if (gtw->ip_equals(gtw, dst))
+			{
+				DBG1(DBG_KNL, "not installing exclude route for directly "
+					 "connected peer %H", dst);
+			}
+			else if (charon->kernel->get_interface(charon->kernel, src, &if_name) &&
+					 charon->kernel->add_route(charon->kernel,
 									dst->get_address(dst),
 									dst->get_family(dst) == AF_INET ? 32 : 128,
 									gtw, src, if_name, FALSE) == SUCCESS)
@@ -2429,6 +2446,7 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 {
 	route_entry_t *route, *old;
 	host_t *host, *src, *dst;
+	char *out_interface = NULL;
 	bool is_virtual;
 
 	if (charon->kernel->get_address_by_ts(charon->kernel, out->src_ts, &host,
@@ -2456,7 +2474,7 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 		 * this is required for example on Linux. */
 		if (is_virtual || this->route_via_internal)
 		{
-			free(route->if_name);
+			out_interface = route->if_name;
 			route->if_name = NULL;
 			src = route->src_ip;
 		}
@@ -2476,6 +2494,7 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 		!charon->kernel->get_interface(charon->kernel, src, &route->if_name))
 	{
 		route_entry_destroy(route);
+		free(out_interface);
 		return FALSE;
 	}
 
@@ -2486,6 +2505,7 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 		if (route_entry_equals(old, route))
 		{	/* such a route already exists */
 			route_entry_destroy(route);
+			free(out_interface);
 			return TRUE;
 		}
 		/* uninstall previously installed route */
@@ -2501,8 +2521,10 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 		policy->route = NULL;
 	}
 
-	/* if remote traffic selector covers the IKE peer, add an exclude route */
-	if (charon->kernel->get_features(charon->kernel) & KERNEL_REQUIRE_EXCLUDE_ROUTE)
+	/* if we don't route via outbound interface and the remote traffic selector
+	 * covers the IKE peer, add an exclude route */
+	if (!streq(route->if_name, out_interface) &&
+		charon->kernel->get_features(charon->kernel) & KERNEL_REQUIRE_EXCLUDE_ROUTE)
 	{
 		if (out->dst_ts->is_host(out->dst_ts, dst))
 		{
@@ -2510,6 +2532,7 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 				 "with IKE traffic", out->src_ts, out->dst_ts, policy_dir_names,
 				 policy->direction);
 			route_entry_destroy(route);
+			free(out_interface);
 			return FALSE;
 		}
 		if (out->dst_ts->includes(out->dst_ts, dst))
@@ -2517,6 +2540,7 @@ static bool install_route(private_kernel_pfkey_ipsec_t *this,
 			add_exclude_route(this, route, out->generic.sa->src, dst);
 		}
 	}
+	free(out_interface);
 
 	DBG2(DBG_KNL, "installing route: %R via %H src %H dev %s",
 		 out->dst_ts, route->gateway, route->src_ip, route->if_name);

@@ -19,7 +19,7 @@
 #  initialize & set some vars
 # ============================
 
-AC_INIT([strongSwan],[5.9.5])
+AC_INIT([strongSwan],[5.9.6])
 AM_INIT_AUTOMAKE(m4_esyscmd([
 	echo tar-ustar
 	echo subdir-objects
@@ -148,6 +148,7 @@ ARG_ENABL_SET([gcrypt],         [enables the libgcrypt plugin.])
 ARG_DISBL_SET([gmp],            [disable GNU MP (libgmp) based crypto implementation plugin.])
 ARG_DISBL_SET([curve25519],     [disable Curve25519 Diffie-Hellman plugin.])
 ARG_DISBL_SET([hmac],           [disable HMAC crypto implementation plugin.])
+ARG_DISBL_SET([kdf],            [disable KDF (prf+) implementation plugin.])
 ARG_ENABL_SET([md4],            [enable MD4 software implementation plugin.])
 ARG_DISBL_SET([md5],            [disable MD5 software implementation plugin.])
 ARG_ENABL_SET([mgf1],           [enable the MGF1 software implementation plugin.])
@@ -323,6 +324,7 @@ ARG_ENABL_SET([python-eggs],    [enable build of provided python eggs.])
 ARG_ENABL_SET([python-eggs-install],[enable installation of provided python eggs.])
 ARG_ENABL_SET([perl-cpan],      [enable build of provided perl CPAN module.])
 ARG_ENABL_SET([perl-cpan-install],[enable installation of provided CPAN module.])
+ARG_ENABL_SET([selinux],        [enable SELinux support for labeled IPsec.])
 ARG_ENABL_SET([tss-trousers],   [enable the use of the TrouSerS Trusted Software Stack])
 ARG_ENABL_SET([tss-tss2],       [enable the use of the TSS 2.0 Trusted Software Stack])
 
@@ -668,7 +670,7 @@ AC_CHECK_FUNC(
 	]
 )
 
-AC_CHECK_FUNCS(prctl mallinfo getpass closefrom getpwnam_r getgrnam_r getpwuid_r chown)
+AC_CHECK_FUNCS(prctl mallinfo mallinfo2 getpass closefrom getpwnam_r getgrnam_r getpwuid_r chown)
 AC_CHECK_FUNCS(fmemopen funopen mmap memrchr setlinebuf strptime dirfd sigwaitinfo explicit_bzero)
 
 AC_CHECK_FUNC([syslog], [
@@ -1250,6 +1252,13 @@ if test x$capabilities = xlibcap; then
 	AC_DEFINE([CAPABILITIES_LIBCAP], [], [have libpcap library])
 fi
 
+if test x$selinux = xtrue; then
+	PKG_CHECK_MODULES(selinux, [libselinux])
+	AC_SUBST(selinux_CFLAGS)
+	AC_SUBST(selinux_LIBS)
+	AC_DEFINE([USE_SELINUX], [], [build with support for SELinux])
+fi
+
 if test x$integrity_test = xtrue; then
 	AC_MSG_CHECKING([for dladdr()])
 	AC_COMPILE_IFELSE(
@@ -1473,7 +1482,6 @@ ADD_PLUGIN([acert],                [s charon])
 ADD_PLUGIN([pubkey],               [s charon pki cmd aikgen])
 ADD_PLUGIN([pkcs1],                [s charon scepclient pki scripts manager medsrv attest nm cmd aikgen fuzz])
 ADD_PLUGIN([pkcs7],                [s charon scepclient pki scripts nm cmd])
-ADD_PLUGIN([pkcs8],                [s charon scepclient pki scripts manager medsrv attest nm cmd])
 ADD_PLUGIN([pkcs12],               [s charon scepclient pki scripts cmd])
 ADD_PLUGIN([pgp],                  [s charon])
 ADD_PLUGIN([dnskey],               [s charon pki])
@@ -1486,6 +1494,7 @@ ADD_PLUGIN([openssl],              [s charon scepclient pki scripts manager meds
 ADD_PLUGIN([wolfssl],              [s charon scepclient pki scripts manager medsrv attest nm cmd aikgen])
 ADD_PLUGIN([gcrypt],               [s charon scepclient pki scripts manager medsrv attest nm cmd aikgen])
 ADD_PLUGIN([botan],                [s charon scepclient pki scripts manager medsrv attest nm cmd aikgen])
+ADD_PLUGIN([pkcs8],                [s charon scepclient pki scripts manager medsrv attest nm cmd])
 ADD_PLUGIN([af-alg],               [s charon scepclient pki scripts medsrv attest nm cmd aikgen])
 ADD_PLUGIN([fips-prf],             [s charon nm cmd])
 ADD_PLUGIN([gmp],                  [s charon scepclient pki scripts manager medsrv attest nm cmd aikgen fuzz])
@@ -1496,6 +1505,7 @@ ADD_PLUGIN([chapoly],              [s charon scripts nm cmd])
 ADD_PLUGIN([xcbc],                 [s charon nm cmd])
 ADD_PLUGIN([cmac],                 [s charon nm cmd])
 ADD_PLUGIN([hmac],                 [s charon pki scripts nm cmd])
+ADD_PLUGIN([kdf],                  [s charon pki scripts nm cmd])
 ADD_PLUGIN([ctr],                  [s charon scripts nm cmd])
 ADD_PLUGIN([ccm],                  [s charon scripts nm cmd])
 ADD_PLUGIN([gcm],                  [s charon scripts nm cmd])
@@ -1519,6 +1529,7 @@ ADD_PLUGIN([kernel-pfkey],         [c charon starter nm cmd])
 ADD_PLUGIN([kernel-pfroute],       [c charon starter nm cmd])
 ADD_PLUGIN([kernel-syscfg],        [c charon starter nm cmd])
 ADD_PLUGIN([kernel-netlink],       [c charon starter nm cmd])
+ADD_PLUGIN([selinux],              [c charon starter nm cmd])
 ADD_PLUGIN([resolve],              [c charon cmd])
 ADD_PLUGIN([save-keys],            [c])
 ADD_PLUGIN([socket-default],       [c charon nm cmd])
@@ -1651,6 +1662,7 @@ AM_CONDITIONAL(USE_DNSKEY, test x$dnskey = xtrue)
 AM_CONDITIONAL(USE_SSHKEY, test x$sshkey = xtrue)
 AM_CONDITIONAL(USE_PEM, test x$pem = xtrue)
 AM_CONDITIONAL(USE_HMAC, test x$hmac = xtrue)
+AM_CONDITIONAL(USE_KDF, test x$kdf = xtrue)
 AM_CONDITIONAL(USE_CMAC, test x$cmac = xtrue)
 AM_CONDITIONAL(USE_XCBC, test x$xcbc = xtrue)
 AM_CONDITIONAL(USE_MYSQL, test x$mysql = xtrue)
@@ -1768,6 +1780,7 @@ AM_CONDITIONAL(USE_ATTR, test x$attr = xtrue)
 AM_CONDITIONAL(USE_ATTR_SQL, test x$attr_sql = xtrue)
 AM_CONDITIONAL(USE_WINDOWS_DNS, test x$windows_dns = xtrue)
 AM_CONDITIONAL(USE_COUNTERS, test x$counters = xtrue)
+AM_CONDITIONAL(USE_SELINUX, test x$selinux = xtrue)
 
 #  other options
 # ---------------
@@ -1917,6 +1930,7 @@ AC_CONFIG_FILES([
 	src/libstrongswan/plugins/random/Makefile
 	src/libstrongswan/plugins/nonce/Makefile
 	src/libstrongswan/plugins/hmac/Makefile
+	src/libstrongswan/plugins/kdf/Makefile
 	src/libstrongswan/plugins/xcbc/Makefile
 	src/libstrongswan/plugins/x509/Makefile
 	src/libstrongswan/plugins/revocation/Makefile
@@ -2073,6 +2087,7 @@ AC_CONFIG_FILES([
 	src/libcharon/plugins/attr/Makefile
 	src/libcharon/plugins/attr_sql/Makefile
 	src/libcharon/plugins/windows_dns/Makefile
+	src/libcharon/plugins/selinux/Makefile
 	src/libcharon/tests/Makefile
 	src/libtpmtss/Makefile
 	src/libtpmtss/plugins/tpm/Makefile
