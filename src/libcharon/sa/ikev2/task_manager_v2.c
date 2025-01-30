@@ -1946,6 +1946,7 @@ static void trigger_mbb_reauth(private_task_manager_t *this)
 		child_create->use_marks(child_create,
 								child_sa->get_mark(child_sa, TRUE).value,
 								child_sa->get_mark(child_sa, FALSE).value);
+		child_create->use_label(child_create, child_sa->get_label(child_sa));
 		/* interface IDs are not migrated as the new CHILD_SAs on old and new
 		 * IKE_SA go though regular updown events */
 		new->queue_task(new, &child_create->task);
@@ -1983,7 +1984,7 @@ static void trigger_mbb_reauth(private_task_manager_t *this)
 	/* suspend online revocation checking until the SA is established */
 	new->set_condition(new, COND_ONLINE_VALIDATION_SUSPENDED, TRUE);
 
-	if (new->initiate(new, NULL, 0, NULL, NULL) != DESTROY_ME)
+	if (new->initiate(new, NULL, NULL) != DESTROY_ME)
 	{
 		new->queue_task(new, (task_t*)ike_verify_peer_cert_create(new));
 		new->queue_task(new, (task_t*)ike_reauth_complete_create(new,
@@ -2102,15 +2103,19 @@ METHOD(task_manager_t, queue_dpd, void,
 }
 
 METHOD(task_manager_t, queue_child, void,
-	private_task_manager_t *this, child_cfg_t *cfg, uint32_t reqid,
-	traffic_selector_t *tsi, traffic_selector_t *tsr)
+	private_task_manager_t *this, child_cfg_t *cfg, child_init_args_t *args)
 {
 	child_create_t *task;
 
-	task = child_create_create(this->ike_sa, cfg, FALSE, tsi, tsr);
-	if (reqid)
+	if (args)
 	{
-		task->use_reqid(task, reqid);
+		task = child_create_create(this->ike_sa, cfg, FALSE, args->src, args->dst);
+		task->use_reqid(task, args->reqid);
+		task->use_label(task, args->label);
+	}
+	else
+	{
+		task = child_create_create(this->ike_sa, cfg, FALSE, NULL, NULL);
 	}
 	queue_task(this, &task->task);
 }

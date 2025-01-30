@@ -4,7 +4,7 @@
 build_botan()
 {
 	# same revision used in the build recipe of the testing environment
-	BOTAN_REV=c55f5d42650b # 2.18.2 + fix for SHA-3 compilation issue
+	BOTAN_REV=2.19.1
 	BOTAN_DIR=$DEPS_BUILD_DIR/botan
 
 	if test -d "$BOTAN_DIR"; then
@@ -37,7 +37,7 @@ build_botan()
 
 build_wolfssl()
 {
-	WOLFSSL_REV=v5.1.1-stable
+	WOLFSSL_REV=v5.2.0-stable
 	WOLFSSL_DIR=$DEPS_BUILD_DIR/wolfssl
 
 	if test -d "$WOLFSSL_DIR"; then
@@ -89,6 +89,46 @@ build_tss2()
 	cd -
 }
 
+build_openssl()
+{
+	SSL_REV=3.0.2
+	SSL_PKG=openssl-$SSL_REV
+	SSL_DIR=$DEPS_BUILD_DIR/$SSL_PKG
+	SSL_SRC=https://www.openssl.org/source/$SSL_PKG.tar.gz
+	SSL_INS=$DEPS_PREFIX/ssl
+	SSL_OPT="shared no-tls no-dtls no-ssl3 no-zlib no-comp no-idea no-psk no-srp
+			 no-stdio no-tests enable-rfc3779 enable-ec_nistp_64_gcc_128"
+
+	if test -d "$SSL_DIR"; then
+		return
+	fi
+
+	# insist on compiling with gcc and debug information as symbols are otherwise not found
+	if test "$LEAK_DETECTIVE" = "yes"; then
+		SSL_OPT="$SSL_OPT CC=gcc -d"
+	fi
+
+	echo "$ build_openssl()"
+
+	curl -L $SSL_SRC | tar xz -C $DEPS_BUILD_DIR &&
+	cd $SSL_DIR &&
+	./config --prefix=$SSL_INS --openssldir=$SSL_INS --libdir=lib $SSL_OPT &&
+	make -j4 >/dev/null &&
+	sudo make install_sw >/dev/null &&
+	sudo ldconfig || exit $?
+	cd -
+}
+
+use_custom_openssl()
+{
+	CFLAGS="$CFLAGS -I$DEPS_PREFIX/ssl/include"
+	export LDFLAGS="$LDFLAGS -L$DEPS_PREFIX/ssl/lib"
+	export LD_LIBRARY_PATH="$DEPS_PREFIX/ssl/lib:$LD_LIBRARY_PATH"
+	if test "$1" = "build-deps"; then
+		build_openssl
+	fi
+}
+
 : ${BUILD_DIR=$PWD}
 : ${DEPS_BUILD_DIR=$BUILD_DIR/..}
 : ${DEPS_PREFIX=/usr/local}
@@ -114,6 +154,10 @@ openssl*)
 	CONFIG="--disable-defaults --enable-pki --enable-openssl --enable-pem"
 	export TESTS_PLUGINS="test-vectors pem openssl!"
 	DEPS="libssl-dev"
+	if test "$TEST" = "openssl-3"; then
+		DEPS=""
+		use_custom_openssl $1
+	fi
 	;;
 gcrypt)
 	CONFIG="--disable-defaults --enable-pki --enable-gcrypt --enable-pkcs1 --enable-pkcs8"
@@ -171,7 +215,8 @@ all|coverage|sonarcloud)
 	DEPS="$DEPS libcurl4-gnutls-dev libsoup2.4-dev libunbound-dev libldns-dev
 		  libmysqlclient-dev libsqlite3-dev clearsilver-dev libfcgi-dev
 		  libldap2-dev libpcsclite-dev libpam0g-dev binutils-dev libnm-dev
-		  libgcrypt20-dev libjson-c-dev python3-pip libtspi-dev libsystemd-dev"
+		  libgcrypt20-dev libjson-c-dev python3-pip libtspi-dev libsystemd-dev
+		  libselinux1-dev"
 	if [ "$ID" = "ubuntu" -a "$VERSION_ID" = "20.04" ]; then
 		DEPS="$DEPS libiptc-dev"
 	else
@@ -183,6 +228,7 @@ all|coverage|sonarcloud)
 		build_wolfssl
 		build_tss2
 	fi
+	use_custom_openssl $1
 	;;
 win*)
 	CONFIG="--disable-defaults --enable-svc --enable-ikev2
@@ -199,10 +245,17 @@ win*)
 	if test "$APPVEYOR" != "True"; then
 		TARGET=
 	else
+		case "$IMG" in
+		2015|2017)
+			# old OpenSSL versions don't provide HKDF
+			CONFIG="$CONFIG --enable-kdf"
+			;;
+		esac
 		CONFIG="$CONFIG --enable-openssl"
 		CFLAGS="$CFLAGS -I$OPENSSL_DIR/include"
 		LDFLAGS="-L$OPENSSL_DIR"
 		export LDFLAGS
+
 	fi
 	CFLAGS="$CFLAGS -mno-ms-bitfields"
 	DEPS="gcc-mingw-w64-base"

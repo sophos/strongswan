@@ -21,7 +21,6 @@
 #include "tls_peer.h"
 
 #include <utils/debug.h>
-#include <credentials/certificates/x509.h>
 
 #include <time.h>
 
@@ -165,7 +164,7 @@ struct private_tls_peer_t {
 
 /* Implemented in tls_server.c */
 bool tls_write_key_share(bio_writer_t **key_share, diffie_hellman_t *dh);
-public_key_t *tls_find_public_key(auth_cfg_t *peer_auth);
+public_key_t *tls_find_public_key(auth_cfg_t *peer_auth, identification_t *id);
 
 /**
  * Verify the DH group/key type requested by the server is valid.
@@ -510,42 +509,6 @@ static status_t process_encrypted_extensions(private_tls_peer_t *this,
 }
 
 /**
- * Check if a server certificate is acceptable for the given server identity
- */
-static bool check_certificate(private_tls_peer_t *this, certificate_t *cert)
-{
-	identification_t *id;
-
-	if (cert->has_subject(cert, this->server))
-	{
-		return TRUE;
-	}
-	id = cert->get_subject(cert);
-	if (id->matches(id, this->server))
-	{
-		return TRUE;
-	}
-	if (cert->get_type(cert) == CERT_X509)
-	{
-		x509_t *x509 = (x509_t*)cert;
-		enumerator_t *enumerator;
-
-		enumerator = x509->create_subjectAltName_enumerator(x509);
-		while (enumerator->enumerate(enumerator, &id))
-		{
-			if (id->matches(id, this->server))
-			{
-				enumerator->destroy(enumerator);
-				return TRUE;
-			}
-		}
-		enumerator->destroy(enumerator);
-	}
-	DBG1(DBG_TLS, "server certificate does not match to '%Y'", this->server);
-	return FALSE;
-}
-
-/**
  * Process a Certificate message
  */
 static status_t process_certificate(private_tls_peer_t *this,
@@ -591,8 +554,10 @@ static status_t process_certificate(private_tls_peer_t *this,
 		{
 			if (first)
 			{
-				if (!check_certificate(this, cert))
+				if (!cert->has_subject(cert, this->server))
 				{
+					DBG1(DBG_TLS, "server certificate does not match to '%Y'",
+						 this->server);
 					cert->destroy(cert);
 					certs->destroy(certs);
 					this->alert->add(this->alert, TLS_FATAL, TLS_ACCESS_DENIED);
@@ -641,7 +606,7 @@ static status_t process_cert_verify(private_tls_peer_t *this,
 	public_key_t *public;
 	chunk_t msg;
 
-	public = tls_find_public_key(this->server_auth);
+	public = tls_find_public_key(this->server_auth, this->server);
 	if (!public)
 	{
 		DBG1(DBG_TLS, "no trusted certificate found for '%Y' to verify TLS server",
@@ -690,7 +655,7 @@ static status_t process_modp_key_exchange(private_tls_peer_t *this,
 		this->alert->add(this->alert, TLS_FATAL, TLS_INTERNAL_ERROR);
 		return NEED_MORE;
 	}
-	public = tls_find_public_key(this->server_auth);
+	public = tls_find_public_key(this->server_auth, this->server);
 	if (!public)
 	{
 		DBG1(DBG_TLS, "no TLS public key found for server '%Y'", this->server);
@@ -797,7 +762,7 @@ static status_t process_ec_key_exchange(private_tls_peer_t *this,
 		return NEED_MORE;
 	}
 
-	public = tls_find_public_key(this->server_auth);
+	public = tls_find_public_key(this->server_auth, this->server);
 	if (!public)
 	{
 		DBG1(DBG_TLS, "no TLS public key found for server '%Y'", this->server);
@@ -1621,7 +1586,7 @@ static status_t send_key_exchange_encrypt(private_tls_peer_t *this,
 		return NEED_MORE;
 	}
 
-	public = tls_find_public_key(this->server_auth);
+	public = tls_find_public_key(this->server_auth, this->server);
 	if (!public)
 	{
 		DBG1(DBG_TLS, "no TLS public key found for server '%Y'", this->server);
