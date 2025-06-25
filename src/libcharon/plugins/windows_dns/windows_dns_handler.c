@@ -222,7 +222,7 @@ static int GetTapAdapterInfo( IWbemServices *pSvc, int *iface_idx, wchar_t *dns1
 			break;
 		}
 
-		// We assume only 1 matching result
+		// This call fetches the first matching network adapter configuration object, if available.	   
 		hres = pEnumerator->lpVtbl->Next( pEnumerator, WBEM_INFINITE, 1, &pClassObj, &uReturn );
 		if ( 0 == uReturn )
 		{
