@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Copyright (C) 2012-2017 Tobias Brunner
-    HSR Hochschule fuer Technik Rapperswil
+
+    Copyright (C) secunet Security Networks AG
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
@@ -22,6 +23,15 @@
         <item>IKEv2 EAP-TLS (Certificate)</item>
         <item>IKEv2 EAP-TNC (Username/Password)</item>
     </string-array>
+
+    <string-array name="managed_config_vpn_type_values" translatable="false">
+        <item>ikev2-eap</item>
+        <item>ikev2-cert</item>
+        <item>ikev2-cert-eap</item>
+        <item>ikev2-eap-tls</item>
+        <item>ikev2-byod-eap</item>
+    </string-array>
+    <string name="managed_config_vpn_type_default_value" translatable="false">ikev2-eap</string>
 
     <!-- the order here must match the enum entries in VpnProfile.java -->
     <string-array name="apps_handling">

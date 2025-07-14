@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2015 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2010-2014 Martin Willi
- * Copyright (C) 2010-2014 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -545,7 +544,7 @@ METHOD(listener_t, child_rekey, bool,
 	private_forecast_listener_t *this, ike_sa_t *ike_sa,
 	child_sa_t *old, child_sa_t *new)
 {
-	struct iptc_handle *ipth;;
+	struct iptc_handle *ipth;
 	host_t *lhost, *rhost;
 
 	lhost = ike_sa->get_my_host(ike_sa);

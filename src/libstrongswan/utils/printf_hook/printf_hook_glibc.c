@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2009-2013 Tobias Brunner
  * Copyright (C) 2006-2008 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -67,7 +68,7 @@ struct printf_hook_data_t {
 	/**
 	 * Output FILE stream
 	 */
-	FILE *stream;;
+	FILE *stream;
 };
 
 /* A-Z | 6 other chars | a-z */

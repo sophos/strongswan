@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Martin Willi
- * Copyright (C) 2010 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -369,6 +370,8 @@ METHOD(aead_t, destroy, void,
 {
 	this->crypter->destroy(this->crypter);
 	this->iv_gen->destroy(this->iv_gen);
+	memwipe(this->salt, sizeof(this->salt));
+	memwipe(this->h, sizeof(this->h));
 	free(this);
 }
 

@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2018 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,13 +16,21 @@
 
 package org.strongswan.android.ui;
 
+import static org.strongswan.android.utils.Constants.PREF_DEFAULT_VPN_PROFILE;
+import static org.strongswan.android.utils.Constants.PREF_DEFAULT_VPN_PROFILE_MRU;
+import static org.strongswan.android.utils.Constants.PREF_IGNORE_POWER_WHITELIST;
+
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 
 import org.strongswan.android.R;
+import org.strongswan.android.data.ManagedConfiguration;
+import org.strongswan.android.data.ManagedConfigurationService;
 import org.strongswan.android.data.VpnProfile;
 import org.strongswan.android.data.VpnProfileDataSource;
+import org.strongswan.android.data.VpnProfileSource;
+import org.strongswan.android.logic.StrongSwanApplication;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,25 +41,31 @@ import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
-
-import static org.strongswan.android.utils.Constants.PREF_DEFAULT_VPN_PROFILE;
-import static org.strongswan.android.utils.Constants.PREF_DEFAULT_VPN_PROFILE_MRU;
+import androidx.preference.SwitchPreference;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements Preference.OnPreferenceChangeListener
 {
+	private ManagedConfigurationService mManagedConfigurationService;
+
 	private ListPreference mDefaultVPNProfile;
+	private SwitchPreference mIgnorePowerWhitelist;
 
 	@Override
 	public void onCreatePreferences(Bundle bundle, String s)
 	{
+		mManagedConfigurationService = StrongSwanApplication.getInstance().getManagedConfigurationService();
+		mManagedConfigurationService.updateSettings();
+
 		setPreferencesFromResource(R.xml.settings, s);
 
-		mDefaultVPNProfile = (ListPreference)findPreference(PREF_DEFAULT_VPN_PROFILE);
+		mDefaultVPNProfile = findPreference(PREF_DEFAULT_VPN_PROFILE);
 		mDefaultVPNProfile.setOnPreferenceChangeListener(this);
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
 		{
 			mDefaultVPNProfile.setEnabled(false);
 		}
+
+		mIgnorePowerWhitelist = findPreference(PREF_IGNORE_POWER_WHITELIST);
 	}
 
 	@Override
@@ -58,11 +73,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
 	{
 		super.onResume();
 
-		VpnProfileDataSource profiles = new VpnProfileDataSource(getActivity());
+		VpnProfileDataSource profiles = new VpnProfileSource(getActivity());
 		profiles.open();
 
 		List<VpnProfile> all = profiles.getAllVpnProfiles();
-		Collections.sort(all, new Comparator<VpnProfile>() {
+		Collections.sort(all, new Comparator<VpnProfile>()
+		{
 			@Override
 			public int compare(VpnProfile lhs, VpnProfile rhs)
 			{
@@ -83,7 +99,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
 		}
 		profiles.close();
 
-		if (entries.size() <= 1)
+		final ManagedConfiguration managedConfiguration = mManagedConfigurationService.getManagedConfiguration();
+		if (entries.size() <= 1 || !managedConfiguration.isAllowSettingsAccess())
 		{
 			mDefaultVPNProfile.setEnabled(false);
 		}
@@ -92,6 +109,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
 			mDefaultVPNProfile.setEnabled(true);
 			mDefaultVPNProfile.setEntries(entries.toArray(new CharSequence[0]));
 			mDefaultVPNProfile.setEntryValues(entryvalues.toArray(new CharSequence[0]));
+		}
+		if (!managedConfiguration.isAllowSettingsAccess())
+		{
+			mIgnorePowerWhitelist.setEnabled(false);
 		}
 
 		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
@@ -110,7 +131,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
 
 	private void setCurrentProfileName(String uuid)
 	{
-		VpnProfileDataSource profiles = new VpnProfileDataSource(getActivity());
+		VpnProfileDataSource profiles = new VpnProfileSource(getActivity());
 		profiles.open();
 
 		if (!uuid.equals(PREF_DEFAULT_VPN_PROFILE_MRU))

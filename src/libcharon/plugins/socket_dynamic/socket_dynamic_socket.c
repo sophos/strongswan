@@ -3,8 +3,8 @@
  * Copyright (C) 2006 Daniel Roethlisberger
  * Copyright (C) 2005-2010 Martin Willi
  * Copyright (C) 2005 Jan Hutter
- * HSR Hochschule fuer Technik Rapperswil
- * Copyright (C) 2010 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -410,13 +410,13 @@ static int open_socket(private_socket_dynamic_socket_t *this,
 		DBG1(DBG_NET, "could not open socket: %s", strerror(errno));
 		return 0;
 	}
-	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*)&on, sizeof(on)) < 0)
+	if (family == AF_INET6 &&
+		setsockopt(fd, SOL_IPV6, IPV6_V6ONLY, &on, sizeof(on)) < 0)
 	{
-		DBG1(DBG_NET, "unable to set SO_REUSEADDR on socket: %s", strerror(errno));
+		DBG1(DBG_NET, "unable to set IPV6_V6ONLY on socket: %s", strerror(errno));
 		close(fd);
 		return 0;
 	}
-
 	if (bind(fd, &addr.s, addrlen) < 0)
 	{
 		DBG1(DBG_NET, "unable to bind socket: %s", strerror(errno));
@@ -604,7 +604,7 @@ METHOD(socket_t, sender, status_t,
 	DBG2(DBG_NET, "sending packet: from %#H to %#H", src, dst);
 
 	memset(&msg, 0, sizeof(struct msghdr));
-	msg.msg_name = dst->get_sockaddr(dst);;
+	msg.msg_name = dst->get_sockaddr(dst);
 	msg.msg_namelen = *dst->get_sockaddr_len(dst);
 	iov.iov_base = data.ptr;
 	iov.iov_len = data.len;

@@ -15,7 +15,7 @@ crypto/prfs/prf.c crypto/prfs/mac_prf.c crypto/pkcs5.c \
 crypto/rngs/rng.c crypto/rngs/rng_tester.c \
 crypto/signers/signer.c \
 crypto/signers/mac_signer.c crypto/crypto_factory.c crypto/crypto_tester.c \
-crypto/diffie_hellman.c crypto/aead.c crypto/transform.c \
+crypto/key_exchange.c crypto/aead.c crypto/transform.c \
 crypto/iv/iv_gen.c crypto/iv/iv_gen_rand.c crypto/iv/iv_gen_seq.c \
 crypto/iv/iv_gen_null.c crypto/kdfs/kdf.c \
 crypto/xofs/xof.c crypto/xofs/xof_bitspender.c \
@@ -25,9 +25,10 @@ credentials/keys/public_key.c credentials/keys/shared_key.c \
 credentials/keys/signature_params.c \
 credentials/certificates/certificate.c credentials/certificates/crl.c \
 credentials/certificates/ocsp_response.c credentials/certificates/x509.c \
+credentials/certificates/ocsp_single_response.c \
 credentials/certificates/certificate_printer.c \
 credentials/containers/container.c credentials/containers/pkcs12.c \
-credentials/credential_manager.c \
+credentials/credential_manager.c credentials/ocsp_responders.c \
 credentials/sets/auth_cfg_wrapper.c credentials/sets/ocsp_response_wrapper.c \
 credentials/sets/cert_cache.c credentials/sets/mem_cred.c \
 credentials/sets/callback_cred.c credentials/auth_cfg.c database/database.c \

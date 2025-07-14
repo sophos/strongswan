@@ -1,0 +1,107 @@
+diff a/src/external/thirdparty/strongswan/src/libcharon/plugins/kernel_libipsec/kernel_libipsec_router.c b/src/external/thirdparty/strongswan/src/libcharon/plugins/kernel_libipsec/kernel_libipsec_router.c	(rejected hunks)
+@@ -13,9 +13,35 @@
+  * for more details.
+  */
+ 
++/*
++ * Copyright (C) 2016 Noel Kuntze
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++
+ #include <unistd.h>
+ #include <fcntl.h>
+ 
++#ifdef WIN32
++#include <signal.h>
++#endif
++
+ #include "kernel_libipsec_router.h"
+ 
+ #include <daemon.h>
+@@ -70,11 +107,17 @@ struct private_kernel_libipsec_router_t {
+ 	 * Lock for TUN device map
+ 	 */
+ 	rwlock_t *lock;
+-
++#ifdef WIN32
++	/**
++	 * Event we use to signal handle_plain() about changes regarding tun devices
++	 */
++	HANDLE event;
++#else
+ 	/**
+ 	 * Pipe to signal handle_plain() about changes regarding TUN devices
+ 	 */
+ 	int notify[2];
++#endif
+ };
+ 
+ /**
+@@ -288,11 +657,22 @@ METHOD(kernel_libipsec_router_t, get_tun_name, char*,
+ 	return name;
+ }
+ 
++/**
++ * restart the read thread
++*/
++METHOD(kernel_libipsec_router_t, resetread, void,
++	private_kernel_libipsec_router_t *this)
++{
++	lib->processor->queue_job(lib->processor,
++		(job_t*)callback_job_create((callback_job_cb_t)handle_plain, this,
++					NULL, (callback_job_cancel_t)handle_plain_cancel));
++}
++
+ METHOD(kernel_libipsec_router_t, destroy, void,
+ 	private_kernel_libipsec_router_t *this)
+ {
+ 	charon->receiver->del_esp_cb(charon->receiver,
+-								(receiver_esp_cb_t)receiver_esp_cb);
++							 (receiver_esp_cb_t)receiver_esp_cb);
+ 	ipsec->processor->unregister_outbound(ipsec->processor,
+ 										 (ipsec_outbound_cb_t)send_esp);
+ 	ipsec->processor->unregister_inbound(ipsec->processor,
+@@ -329,12 +717,16 @@ kernel_libipsec_router_t *kernel_libipsec_router_create()
+ 			},
+ 			.get_tun_name = _get_tun_name,
+ 			.destroy = _destroy,
++			.resetread = _resetread,
+ 		},
+ 		.tun = {
+ 			.tun = lib->get(lib, "kernel-libipsec-tun"),
+ 		}
+ 	);
+-
++#ifdef WIN32
++	this->tun.handle = this->tun.tun->get_handle(this->tun.tun);
++	this->event = CreateEvent(NULL, FALSE, FALSE, FALSE);
++#else
+ 	if (pipe(this->notify) != 0 ||
+ 		!set_nonblock(this->notify[0]) || !set_nonblock(this->notify[1]))
+ 	{
+@@ -357,7 +750,7 @@ kernel_libipsec_router_t *kernel_libipsec_router_create()
+ 									(receiver_esp_cb_t)receiver_esp_cb, NULL);
+ 	lib->processor->queue_job(lib->processor,
+ 			(job_t*)callback_job_create((callback_job_cb_t)handle_plain, this,
+-									NULL, (callback_job_cancel_t)return_false));
++									NULL, (callback_job_cancel_t)handle_plain_cancel));
+ 
+ 	router = &this->public;
+ 	return &this->public;

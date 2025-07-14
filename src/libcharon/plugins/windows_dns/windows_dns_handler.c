@@ -212,7 +212,7 @@ static int GetTapAdapterInfo( IWbemServices *pSvc, int *iface_idx, wchar_t *dns1
 	{
 		// Allocate our strings
 		language = SysAllocString( L"WQL" );
-		query = SysAllocString( L"SELECT * FROM Win32_NetworkAdapterConfiguration where Description LIKE 'Sophos TAP Adapter'" );
+		query = SysAllocString( L"SELECT * FROM Win32_NetworkAdapterConfiguration where Description LIKE 'Sophos TAP Adapter%'" );
 
 		// Get the current DNS servers list for our adapter
 		hres = pSvc->lpVtbl->ExecQuery( pSvc, language, query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator );
@@ -222,7 +222,7 @@ static int GetTapAdapterInfo( IWbemServices *pSvc, int *iface_idx, wchar_t *dns1
 			break;
 		}
 
-		// We assume only 1 matching result
+		// This call picks the first matching network adapter configuration object
 		hres = pEnumerator->lpVtbl->Next( pEnumerator, WBEM_INFINITE, 1, &pClassObj, &uReturn );
 		if ( 0 == uReturn )
 		{

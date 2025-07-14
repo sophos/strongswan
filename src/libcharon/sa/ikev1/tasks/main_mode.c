@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2011-2012 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2011 Martin Willi
- * Copyright (C) 2011 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -57,11 +56,6 @@ struct private_main_mode_t {
 	 * Common phase 1 helper class
 	 */
 	phase1_t *ph1;
-
-	/**
-	 * IKE config to establish
-	 */
-	ike_cfg_t *ike_cfg;
 
 	/**
 	 * Peer config to use
@@ -247,6 +241,7 @@ METHOD(task_t, build_i, status_t,
 	{
 		case MM_INIT:
 		{
+			ike_cfg_t *ike_cfg;
 			sa_payload_t *sa_payload;
 			linked_list_t *proposals;
 			packet_t *packet;
@@ -257,7 +252,7 @@ METHOD(task_t, build_i, status_t,
 				 this->ike_sa->get_other_host(this->ike_sa));
 			this->ike_sa->set_state(this->ike_sa, IKE_CONNECTING);
 
-			this->ike_cfg = this->ike_sa->get_ike_cfg(this->ike_sa);
+			ike_cfg = this->ike_sa->get_ike_cfg(this->ike_sa);
 			this->peer_cfg = this->ike_sa->get_peer_cfg(this->ike_sa);
 			this->peer_cfg->get_ref(this->peer_cfg);
 
@@ -275,7 +270,7 @@ METHOD(task_t, build_i, status_t,
 																 FALSE);
 			}
 			this->lifetime += this->peer_cfg->get_over_time(this->peer_cfg);
-			proposals = this->ike_cfg->get_proposals(this->ike_cfg);
+			proposals = ike_cfg->get_proposals(ike_cfg);
 			sa_payload = sa_payload_create_from_proposals_v1(proposals,
 									this->lifetime, 0, this->method, MODE_NONE,
 									ENCAP_NONE, 0);
@@ -313,7 +308,7 @@ METHOD(task_t, build_i, status_t,
 				return send_notify(this, NO_PROPOSAL_CHOSEN);
 			}
 			if (!this->proposal->get_algorithm(this->proposal,
-										DIFFIE_HELLMAN_GROUP, &group, NULL))
+										KEY_EXCHANGE_METHOD, &group, NULL))
 			{
 				DBG1(DBG_IKE, "DH group selection failed");
 				return send_notify(this, NO_PROPOSAL_CHOSEN);
@@ -363,11 +358,12 @@ METHOD(task_t, process_r, status_t,
 	{
 		case MM_INIT:
 		{
+			ike_cfg_t *ike_cfg;
 			linked_list_t *list;
 			sa_payload_t *sa_payload;
 			proposal_selection_flag_t flags = 0;
 
-			this->ike_cfg = this->ike_sa->get_ike_cfg(this->ike_sa);
+			ike_cfg = this->ike_sa->get_ike_cfg(this->ike_sa);
 			DBG0(DBG_IKE, "%H is initiating a Main Mode IKE_SA",
 				 message->get_source(message));
 			this->ike_sa->set_state(this->ike_sa, IKE_CONNECTING);
@@ -401,8 +397,7 @@ METHOD(task_t, process_r, status_t,
 			{
 				flags |= PROPOSAL_PREFER_SUPPLIED;
 			}
-			this->proposal = this->ike_cfg->select_proposal(this->ike_cfg,
-											list, flags);
+			this->proposal = ike_cfg->select_proposal(ike_cfg, list, flags);
 			list->destroy_offset(list, offsetof(proposal_t, destroy));
 			if (!this->proposal)
 			{
@@ -427,7 +422,7 @@ METHOD(task_t, process_r, status_t,
 				return send_notify(this, INVALID_KEY_INFORMATION);
 			}
 			if (!this->proposal->get_algorithm(this->proposal,
-										DIFFIE_HELLMAN_GROUP, &group, NULL))
+										KEY_EXCHANGE_METHOD, &group, NULL))
 			{
 				DBG1(DBG_IKE, "DH group selection failed");
 				return send_notify(this, INVALID_KEY_INFORMATION);
@@ -635,6 +630,7 @@ METHOD(task_t, process_i, status_t,
 		{
 			linked_list_t *list;
 			sa_payload_t *sa_payload;
+			ike_cfg_t *ike_cfg;
 			auth_method_t method;
 			proposal_selection_flag_t flags = 0;
 			uint32_t lifetime;
@@ -653,8 +649,8 @@ METHOD(task_t, process_i, status_t,
 			{
 				flags |= PROPOSAL_SKIP_PRIVATE;
 			}
-			this->proposal = this->ike_cfg->select_proposal(this->ike_cfg,
-															list, flags);
+			ike_cfg = this->ike_sa->get_ike_cfg(this->ike_sa);
+			this->proposal = ike_cfg->select_proposal(ike_cfg, list, flags);
 			list->destroy_offset(list, offsetof(proposal_t, destroy));
 			if (!this->proposal)
 			{

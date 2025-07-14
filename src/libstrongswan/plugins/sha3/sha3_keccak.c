@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2015-2016 Andreas Steffen
- * HSR Hochschule fuer Technik Rapperswil
  *
  * Based on the implementation by the Keccak, Keyak and Ketje Teams, namely,
  * Guido Bertoni, Joan Daemen, Michaël Peeters, Gilles Van Assche and
@@ -463,6 +462,7 @@ METHOD(sha3_keccak_t, squeeze, void,
 METHOD(sha3_keccak_t, destroy, void,
 	private_sha3_keccak_t *this)
 {
+	memwipe(this->state, sizeof(this->state));
 	free(this);
 }
 

@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2008 Tobias Brunner
  * Copyright (C) 2005-2010 Martin Willi
- * Copyright (C) 2010 revosec AG
  * Copyright (C) 2005 Jan Hutter
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -230,6 +230,9 @@ METHOD(cert_payload_t, get_cert, certificate_t*,
 		case ENC_CRL:
 			type = CERT_X509_CRL;
 			break;
+		case ENC_OCSP_CONTENT:
+			type = CERT_X509_OCSP_RESPONSE;
+			break;
 		default:
 			return NULL;
 	}
@@ -338,6 +341,9 @@ cert_payload_t *cert_payload_create_from_cert(payload_type_t type,
 			break;
 		case CERT_X509_AC:
 			this->encoding = ENC_X509_ATTRIBUTE;
+			break;
+		case CERT_X509_OCSP_RESPONSE:
+			this->encoding = ENC_OCSP_CONTENT;
 			break;
 		default:
 			DBG1(DBG_ENC, "embedding %N certificate in payload failed",

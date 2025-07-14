@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010-2012 Andreas Steffen
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -185,13 +186,13 @@ METHOD(recommendations_t, have_recommendation, bool,
 						if (final_rec != TNC_IMV_ACTION_RECOMMENDATION_ALLOW)
 						{
 							final_rec = entry->rec;
-						};
+						}
 						break;
 					case TNC_IMV_ACTION_RECOMMENDATION_NO_ACCESS:
 						if (final_rec == TNC_IMV_ACTION_RECOMMENDATION_NO_RECOMMENDATION)
 						{
 							final_rec = entry->rec;
-						};
+						}
 						break;
 					case TNC_IMV_ACTION_RECOMMENDATION_NO_RECOMMENDATION:
 						break;

@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -156,7 +157,7 @@ bool pkcs12_derive_key(hash_algorithm_t hash, chunk_t password, chunk_t salt,
 	bool success;
 	int i;
 
-	if (password.len)
+	if (password.ptr)
 	{	/* convert the password to UTF-16BE (without BOM) with 0 terminator */
 		unicode = chunk_alloca(password.len * 2 + 2);
 		for (i = 0; i < password.len; i++)

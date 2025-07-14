@@ -1,7 +1,6 @@
 %{
 /*
  * Copyright (C) 2013-2014 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -202,6 +201,8 @@ value:
 		}
 		free($1);
 		free($2);
+		/* suppress compiler warning */
+		(void)yynerrs;
 	}
 	;
 

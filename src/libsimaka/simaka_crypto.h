@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +23,7 @@
 #define SIMAKA_CRYPTO_H_
 
 #include <library.h>
+#include <eap/eap.h>
 
 typedef struct simaka_crypto_t simaka_crypto_t;
 
@@ -107,8 +109,9 @@ struct simaka_crypto_t {
 /**
  * Create a simaka_crypto instance.
  *
+ * @param type	EAP type
  * @return		EAP-SIM/AKA crypto instance, NULL if algorithms missing
  */
-simaka_crypto_t *simaka_crypto_create();
+simaka_crypto_t *simaka_crypto_create(eap_type_t type);
 
 #endif /** SIMAKA_CRYPTO_H_ @}*/

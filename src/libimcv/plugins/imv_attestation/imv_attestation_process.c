@@ -1,7 +1,8 @@
 /*
+ * Copyright (C) 2011-2022 Andreas Steffen
  * Copyright (C) 2011-2012 Sansar Choinyambuu
- * Copyright (C) 2011-2014 Andreas Steffen
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -227,7 +228,7 @@ bool imv_attestation_process(pa_tnc_attr_t *attr, imv_msg_t *out_msg,
 			TNC_IMV_Action_Recommendation rec;
 			tcg_pts_attr_file_meas_t *attr_cast;
 			uint16_t request_id;
-			int arg_int, file_count;
+			int arg_int, file_count DBG_UNUSED;
 			pts_meas_algorithms_t algo;
 			pts_file_meas_t *measurements;
 			imv_workitem_t *workitem, *found = NULL;
@@ -363,6 +364,7 @@ bool imv_attestation_process(pa_tnc_attr_t *attr, imv_msg_t *out_msg,
 		}
 		case TCG_PTS_UNIX_FILE_META:
 		{
+#if DEBUG_LEVEL >= 1
 			tcg_pts_attr_file_meta_t *attr_cast;
 			int file_count;
 			pts_file_meta_t *metadata;
@@ -394,6 +396,7 @@ bool imv_attestation_process(pa_tnc_attr_t *attr, imv_msg_t *out_msg,
 					 &created, utc, &modified, utc, &accessed, utc);
 			}
 			e->destroy(e);
+#endif /* DEBUG_LEVEL */
 			break;
 		}
 		case TCG_PTS_SIMPLE_COMP_EVID:
@@ -524,8 +527,8 @@ quote_error:
 			}
 			break;
 		}
-		case TCG_SEG_MAX_ATTR_SIZE_RESP:
-		case TCG_SEG_ATTR_SEG_ENV:
+		case TCG_SEG_CONTRACT_RESP:
+		case TCG_SEG_ENVELOPE:
 			break;
 
 		/* TODO: Not implemented yet */

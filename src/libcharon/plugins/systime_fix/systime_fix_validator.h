@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2013 Martin Willi
- * Copyright (C) 2013 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -43,7 +44,9 @@ struct systime_fix_validator_t {
 
 /**
  * Create a systime_fix_validator instance.
+ *
+ * @param threshold		timestamp where we start to consider system time valid
  */
-systime_fix_validator_t *systime_fix_validator_create();
+systime_fix_validator_t *systime_fix_validator_create(time_t threshold);
 
 #endif /** SYSTIME_FIX_VALIDATOR_H_ @}*/

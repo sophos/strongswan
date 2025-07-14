@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2011-2015 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2010 Martin Willi
- * Copyright (C) 2010 revosec AG
+ * Copyright (C) 2024 Andreas Steffen
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -210,14 +210,16 @@ METHOD(public_key_t, verify, bool,
 	hash_algorithm_t hash_alg;
 	chunk_t hash = chunk_empty, parse, r, s;
 	size_t len;
+	bool success = FALSE;
 
 	mechanism = pkcs11_signature_scheme_to_mech(this->lib, this->slot, scheme,
-												this->type, this->k, &hash_alg);
+												params, this->type, this->k,
+												&hash_alg);
 	if (!mechanism)
 	{
 		DBG1(DBG_LIB, "signature scheme %N not supported",
 			 signature_scheme_names, scheme);
-		return FALSE;
+		goto end;
 	}
 	switch (scheme)
 	{
@@ -232,14 +234,14 @@ METHOD(public_key_t, verify, bool,
 				asn1_unwrap(&parse, &r) != ASN1_INTEGER ||
 				asn1_unwrap(&parse, &s) != ASN1_INTEGER)
 			{
-				return FALSE;
+				goto end;
 			}
 			r = chunk_skip_zero(r);
 			s = chunk_skip_zero(s);
 			len = (get_keysize(this) + 7) / 8;
 			if (r.len > len || s.len > len)
 			{
-				return FALSE;
+				goto end;
 			}
 			/* concatenate r and s (forced to the defined length) */
 			sig = chunk_alloca(2*len);
@@ -256,14 +258,14 @@ METHOD(public_key_t, verify, bool,
 	if (rv != CKR_OK)
 	{
 		DBG1(DBG_CFG, "opening PKCS#11 session failed: %N", ck_rv_names, rv);
-		return FALSE;
+		goto end;
 	}
 	rv = this->lib->f->C_VerifyInit(session, mechanism, this->object);
 	if (rv != CKR_OK)
 	{
 		this->lib->f->C_CloseSession(session);
 		DBG1(DBG_LIB, "C_VerifyInit() failed: %N", ck_rv_names, rv);
-		return FALSE;
+		goto end;
 	}
 	if (hash_alg != HASH_UNKNOWN)
 	{
@@ -274,7 +276,7 @@ METHOD(public_key_t, verify, bool,
 		{
 			DESTROY_IF(hasher);
 			this->lib->f->C_CloseSession(session);
-			return FALSE;
+			goto end;
 		}
 		hasher->destroy(hasher);
 		switch (scheme)
@@ -300,9 +302,17 @@ METHOD(public_key_t, verify, bool,
 	if (rv != CKR_OK)
 	{
 		DBG1(DBG_LIB, "C_Verify() failed: %N", ck_rv_names, rv);
-		return FALSE;
+		goto end;
 	}
-	return TRUE;
+	success = TRUE;
+
+end:
+	if (mechanism)
+	{
+		free(mechanism->pParameter);
+	}
+	free(mechanism);
+	return success;
 }
 
 METHOD(public_key_t, encrypt, bool,
@@ -431,7 +441,7 @@ static bool fingerprint_ecdsa(private_pkcs11_public_key_t *this,
 	}
 	hasher->destroy(hasher);
 	chunk_clear(&asn1);
-	lib->encoding->cache(lib->encoding, type, this, *fp);
+	lib->encoding->cache(lib->encoding, type, this, fp);
 	return TRUE;
 }
 
