@@ -212,7 +212,7 @@ static char* format_error(DWORD error)
 				  NULL,
 				  error,
 				  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				  (char**)&lpMsgBuf,
+				   (LPSTR)&lpMsgBuf,
 				  0,
 				  NULL);
 	if ( dwChars > 2 && lpMsgBuf != NULL )
