@@ -172,7 +172,7 @@ static chunk_t build_requestList(private_x509_ocsp_request_t *this)
 						serialNumber = x509->get_serial(x509);
 						request = build_Request(this, issuerNameHash,
 												issuerKeyHash, serialNumber);
-						list = chunk_cat("mm", list, request);
+						list = chunk_cat_new("mm", &list, &request);
 					}
 					enumerator->destroy(enumerator);
 					chunk_free(&issuerNameHash);

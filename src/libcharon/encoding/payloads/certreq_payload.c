@@ -174,7 +174,8 @@ METHOD(certreq_payload_t, get_dn, identification_t*,
 METHOD(certreq_payload_t, add_keyid, void,
 	private_certreq_payload_t *this, chunk_t keyid)
 {
-	this->data = chunk_cat("mc", this->data, keyid);
+	chunk_t first = this->data, second = keyid;
+	this->data = chunk_cat_new("mc", &first, &second);
 	this->payload_length += keyid.len;
 }
 

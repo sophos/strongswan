@@ -519,7 +519,8 @@ ip_packet_t *ip_packet_create_from_data(host_t *src, host_t *dst,
 			memcpy(&ip.ip_dst, dst->get_address(dst).ptr, sizeof(ip.ip_dst));
 			ip.ip_sum = chunk_internet_checksum(chunk_from_thing(ip));
 
-			packet = chunk_cat("cc", chunk_from_thing(ip), data);
+			chunk_t first = chunk_from_thing(ip);
+			packet = chunk_cat_new("cc", &first, &data);
 			fix_transport_header(src, dst, next_header, chunk_skip(packet, 20));
 			return ip_packet_create(packet);
 		}
@@ -535,7 +536,8 @@ ip_packet_t *ip_packet_create_from_data(host_t *src, host_t *dst,
 			memcpy(&ip.ip6_src, src->get_address(src).ptr, sizeof(ip.ip6_src));
 			memcpy(&ip.ip6_dst, dst->get_address(dst).ptr, sizeof(ip.ip6_dst));
 
-			packet = chunk_cat("cc", chunk_from_thing(ip), data);
+			chunk_t first = chunk_from_thing(ip);
+			packet = chunk_cat_new("cc", &first, &data);
 			fix_transport_header(src, dst, next_header, chunk_skip(packet, 40));
 			return ip_packet_create(packet);
 		}
@@ -558,7 +560,8 @@ ip_packet_t *ip_packet_create_udp_from_data(host_t *src, host_t *dst,
 	};
 	ip_packet_t *packet;
 
-	data = chunk_cat("cc", chunk_from_thing(udp), data);
+	chunk_t first = chunk_from_thing(udp);
+	data = chunk_cat_new("cc", &first, &data);
 	packet = ip_packet_create_from_data(src, dst, IPPROTO_UDP, data);
 	chunk_free(&data);
 	return packet;

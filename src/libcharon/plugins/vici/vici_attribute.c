@@ -490,13 +490,14 @@ CALLBACK(pool_li, bool,
 					mask = 32 - mask;
 					netmask = htonl((0xFFFFFFFF >> mask) << mask);
 				}
-				encoding = chunk_cat("cc", host->get_address(host),
-									 chunk_from_thing(netmask));
+
+				chunk_t first = host->get_address(host), second = chunk_from_thing(netmask);
+				encoding = chunk_cat_new("cc", &first, &second);
 			}
 			else
 			{	/* IPv6 addresses the prefix only */
-				encoding = chunk_cat("cc", host->get_address(host),
-									 chunk_from_chars(mask));
+				chunk_t first = host->get_address(host), second = chunk_from_chars(mask);
+				encoding = chunk_cat_new("cc", &first, &second);
 			}
 		}
 		host->destroy(host);

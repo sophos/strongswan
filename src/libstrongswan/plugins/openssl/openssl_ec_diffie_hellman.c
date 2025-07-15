@@ -219,7 +219,8 @@ METHOD(diffie_hellman_t, set_other_public_value, bool,
 #else
 	/* OpenSSL expects the pubkey in the format specified in section 2.3.4 of
 	 * SECG SEC 1, i.e. prefixed with 0x04 to indicate an uncompressed point */
-	value = chunk_cata("cc", chunk_from_chars(0x04), value);
+	chunk_t first = chunk_from_chars(0x04);
+	value = chunk_cata_new("cc", &first, &value);
 	if (EVP_PKEY_copy_parameters(this->pub, this->key) <= 0 ||
 		EVP_PKEY_set1_encoded_public_key(this->pub, value.ptr, value.len) <= 0)
 	{

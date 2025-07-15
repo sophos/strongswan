@@ -425,7 +425,9 @@ static chunk_t append_header(private_encrypted_payload_t *this, chunk_t assoc)
 		.flags = this->flags,
 		.length = htons(get_length(this)),
 	};
-	return chunk_cat("cc", assoc, chunk_from_thing(header));
+
+	chunk_t first = assoc, second = chunk_from_thing(header);
+	return chunk_cat_new("cc", &first, &second);
 }
 
 /**
@@ -947,7 +949,9 @@ static chunk_t append_header_frag(private_encrypted_fragment_payload_t *this,
 		.fragment_number = htons(this->fragment_number),
 		.total_fragments = htons(this->total_fragments),
 	};
-	return chunk_cat("cc", assoc, chunk_from_thing(header));
+
+	chunk_t first = assoc, second = chunk_from_thing(header);
+	return chunk_cat_new("cc", &first, &second);
 }
 
 METHOD(encrypted_payload_t, frag_encrypt, status_t,

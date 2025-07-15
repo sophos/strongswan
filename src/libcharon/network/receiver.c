@@ -208,14 +208,17 @@ static bool cookie_build(private_receiver_t *this, message_t *message,
 	chunk_t input, hash;
 
 	/* COOKIE = t | sha1( IPi | SPIi | t | secret ) */
-	input = chunk_cata("cccc", ip->get_address(ip), chunk_from_thing(spi),
-					  chunk_from_thing(t), secret);
+	chunk_t first = ip->get_address(ip), second = chunk_from_thing(spi),
+		third = chunk_from_thing(t);
+	input = chunk_cata_new("cccc", &first, &second, &third, &secret);
 	hash = chunk_alloca(this->hasher->get_hash_size(this->hasher));
 	if (!this->hasher->get_hash(this->hasher, input, hash.ptr))
 	{
 		return FALSE;
 	}
-	*cookie = chunk_cat("cc", chunk_from_thing(t), hash);
+
+	chunk_t first1 = chunk_from_thing(t);
+	*cookie = chunk_cat_new("cc", &first1, &hash);
 	return TRUE;
 }
 

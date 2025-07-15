@@ -265,7 +265,10 @@ METHOD(delete_payload_t, add_spi, void,
 		case PROTO_ESP:
 			this->spi_count++;
 			this->payload_length += sizeof(spi);
-			this->spis = chunk_cat("mc", this->spis, chunk_from_thing(spi));
+			
+			chunk_t first = this->spis, second = chunk_from_thing(spi);
+			this->spis = chunk_cat_new("mc", &first, &second);
+			
 			break;
 		default:
 			break;
@@ -276,8 +279,10 @@ METHOD(delete_payload_t, set_ike_spi, void,
 	private_delete_payload_t *this, uint64_t spi_i, uint64_t spi_r)
 {
 	free(this->spis.ptr);
-	this->spis = chunk_cat("cc", chunk_from_thing(spi_i),
-								 chunk_from_thing(spi_r));
+
+	chunk_t first = chunk_from_thing(spi_i), second = chunk_from_thing(spi_r);
+	this->spis = chunk_cat_new("cc", &first, &second);
+	
 	this->spi_count = 1;
 	this->payload_length = get_header_length(this) + this->spi_size;
 }

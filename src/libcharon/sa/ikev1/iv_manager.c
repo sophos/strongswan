@@ -147,7 +147,9 @@ static bool generate_iv(private_iv_manager_t *this, iv_data_t *iv)
 		chunk_t data;
 
 		net = htonl(iv->mid);
-		data = chunk_cata("cc", this->phase1_iv.iv, chunk_from_thing(net));
+
+		chunk_t first = this->phase1_iv.iv, second = chunk_from_thing(net);
+		data = chunk_cata_new("cc", &first, &second);
 		if (!this->hasher->allocate_hash(this->hasher, data, &iv->iv))
 		{
 			return FALSE;

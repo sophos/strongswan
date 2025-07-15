@@ -240,7 +240,7 @@ static auth_cfg_t *verify_signature(CMS_SignerInfo *si, int hash_oid)
 	for (i = 0; i < CMS_signed_get_attr_count(si); i++)
 	{
 		attr = openssl_i2chunk(X509_ATTRIBUTE, CMS_signed_get_attr(si, i));
-		attrs = chunk_cat("mm", attrs, attr);
+		attrs = chunk_cat_new("mm", &attrs, &attr);
 	}
 	/* wrap in a ASN1_SET */
 	attrs = asn1_wrap(0x31, "m", attrs);
@@ -633,7 +633,8 @@ static bool decrypt(private_openssl_pkcs7_t *this,
 				chunk = openssl_asn1_str2chunk(sn);
 				if (chunk.len && chunk.ptr[0] & 0x80)
 				{	/* if MSB is set, append a zero to make it non-negative */
-					chunk = chunk_cata("cc", chunk_from_thing(zero), chunk);
+					chunk_t first = chunk_from_thing(zero);
+					chunk = chunk_cata_new("cc", &first, &chunk);
 				}
 				serial = identification_create_from_encoding(ID_KEY_ID, chunk);
 				private = find_private(issuer, serial);

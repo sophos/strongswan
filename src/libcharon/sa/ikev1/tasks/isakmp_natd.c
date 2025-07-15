@@ -143,10 +143,11 @@ static chunk_t generate_natd_hash(private_isakmp_natd_t *this,
 	spi_r = ike_sa_id->get_responder_spi(ike_sa_id);
 	port = htons(host->get_port(host));
 
+	chunk_t first = chunk_from_thing(spi_i), second = chunk_from_thing(spi_r),
+		third = host->get_address(host), fourth = chunk_from_thing(port);
+
 	/*  natd_hash = HASH(CKY-I | CKY-R | IP | Port) */
-	natd_chunk = chunk_cata("cccc", chunk_from_thing(spi_i),
-						    chunk_from_thing(spi_r), host->get_address(host),
-						    chunk_from_thing(port));
+	natd_chunk = chunk_cata_new("cccc", &first, &second, &third, &fourth);
 	if (!hasher->allocate_hash(hasher, natd_chunk, &natd_hash))
 	{
 		DBG1(DBG_IKE, "creating NAT-D payload hash failed");

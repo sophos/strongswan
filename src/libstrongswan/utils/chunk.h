@@ -68,7 +68,7 @@ chunk_t chunk_create_clone(u_char *ptr, chunk_t chunk);
 /**
  * Calculate length of multiple chunks
  */
-size_t chunk_length(const char *mode, ...);
+size_t chunk_length_new(const char *mode, ...);
 
 /**
  * Concatenate chunks into a chunk pointing to "ptr".
@@ -77,7 +77,7 @@ size_t chunk_length(const char *mode, ...);
  * them with a single character: 'c' for copy (allocate new chunk), 'm' for move
  * (free given chunk) or 's' for sensitive-move (clear given chunk, then free).
  */
-chunk_t chunk_create_cat(u_char *ptr, const char* mode, ...);
+chunk_t chunk_create_cat_new(u_char *ptr, const char* mode, ...);
 
 /**
  * Split up a chunk into parts, "mode" is a string of "a" (alloc),
@@ -271,12 +271,12 @@ static inline void chunk_clear(chunk_t *chunk)
 /**
  * Concatenate chunks into a chunk on heap
  */
-#define chunk_cat(mode, ...) chunk_create_cat(malloc(chunk_length(mode, __VA_ARGS__)), mode, __VA_ARGS__)
+#define chunk_cat_new(mode, ...) chunk_create_cat_new(malloc(chunk_length_new(mode, __VA_ARGS__)), mode, __VA_ARGS__)
 
 /**
  * Concatenate chunks into a chunk on stack
  */
-#define chunk_cata(mode, ...) chunk_create_cat(alloca(chunk_length(mode, __VA_ARGS__)), mode, __VA_ARGS__)
+#define chunk_cata_new(mode, ...) chunk_create_cat_new(alloca(chunk_length_new(mode, __VA_ARGS__)), mode, __VA_ARGS__)
 
 /**
  * Skip n bytes in chunk (forward pointer, shorten length)

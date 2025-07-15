@@ -2087,7 +2087,7 @@ chunk_t x509_build_subjectAltNames(linked_list_t *list)
 	while (enumerator->enumerate(enumerator, &id))
 	{
 		name = build_generalName(id);
-		subjectAltNames = chunk_cat("mm", subjectAltNames, name);
+		subjectAltNames = chunk_cat_new("mm", &subjectAltNames, &name);
 	}
 	enumerator->destroy(enumerator);
 
@@ -2129,8 +2129,8 @@ chunk_t x509_build_crlDistributionPoints(linked_list_t *list, int extn)
 							asn1_wrap(ASN1_CONTEXT_S_6, "c",
 								chunk_create(cdp->uri, strlen(cdp->uri))))),
 					crlIssuer);
-		crlDistributionPoints = chunk_cat("mm", crlDistributionPoints,
-										  distributionPoint);
+		crlDistributionPoints = chunk_cat_new("mm", &crlDistributionPoints,
+										  &distributionPoint);
 	}
 	enumerator->destroy(enumerator);
 
@@ -2150,10 +2150,13 @@ static chunk_t generate_ts(traffic_selector_t *ts)
 	if (ts->to_subnet(ts, &net, &minbits))
 	{
 		unused = round_up(minbits, BITS_PER_BYTE) - minbits;
-		from = asn1_wrap(ASN1_BIT_STRING, "m",
-			chunk_cat("cc", chunk_from_thing(unused),
-							chunk_create(net->get_address(net).ptr,
-										 (minbits + unused) / BITS_PER_BYTE)));
+
+		chunk_t first = chunk_from_thing(unused),
+			second = chunk_create(net->get_address(net).ptr,
+										 (minbits + unused) / BITS_PER_BYTE);
+		
+		chunk_t composite = chunk_cat_new("cc", &first, &second);
+		from = asn1_wrap(ASN1_BIT_STRING, "m", composite);
 		net->destroy(net);
 		return from;
 	}
@@ -2194,15 +2197,21 @@ static chunk_t generate_ts(traffic_selector_t *ts)
 		}
 	}
 	unused = round_up(minbits, BITS_PER_BYTE) - minbits;
-	from = asn1_wrap(ASN1_BIT_STRING, "m",
-			chunk_cat("cc", chunk_from_thing(unused),
-							chunk_create(from.ptr,
-										 (minbits + unused) / BITS_PER_BYTE)));
+
+	chunk_t first = chunk_from_thing(unused),
+		second = chunk_create(from.ptr,
+										 (minbits + unused) / BITS_PER_BYTE);
+
+	chunk_t composite = chunk_cat_new("cc", &first, &second);
+	from = asn1_wrap(ASN1_BIT_STRING, "m", composite);
 	unused = round_up(maxbits, BITS_PER_BYTE) - maxbits;
-	to = asn1_wrap(ASN1_BIT_STRING, "m",
-			chunk_cat("cc", chunk_from_thing(unused),
-							chunk_create(to.ptr,
-										 (maxbits + unused) / BITS_PER_BYTE)));
+
+	chunk_t first1 = chunk_from_thing(unused),
+			second1 = chunk_create(to.ptr,
+										 (maxbits + unused) / BITS_PER_BYTE);
+					
+	chunk_t composite1 = chunk_cat_new("cc", &first1, &second1);
+	to = asn1_wrap(ASN1_BIT_STRING, "m", composite1);
 	return asn1_wrap(ASN1_SEQUENCE, "mm", from, to);
 }
 
@@ -2301,8 +2310,8 @@ static bool generate(private_x509_cert_t *cert, certificate_t *sign_cert,
 								asn1_build_known_oid(OID_OCSP),
 								asn1_wrap(ASN1_CONTEXT_S_6, "c",
 										  chunk_create(uri, strlen(uri))));
-		authorityInfoAccess = chunk_cat("mm", authorityInfoAccess,
-										accessDescription);
+		authorityInfoAccess = chunk_cat_new("mm", &authorityInfoAccess,
+										&accessDescription);
 	}
 	enumerator->destroy(enumerator);
 	if (authorityInfoAccess.ptr)
@@ -2423,11 +2432,11 @@ static bool generate(private_x509_cert_t *cert, certificate_t *sign_cert,
 			{
 				case TS_IPV4_ADDR_RANGE:
 					block = generate_ts(ts);
-					v4blocks = chunk_cat("mm", v4blocks, block);
+					v4blocks = chunk_cat_new("mm", &v4blocks, &block);
 					break;
 				case TS_IPV6_ADDR_RANGE:
 					block = generate_ts(ts);
-					v6blocks = chunk_cat("mm", v6blocks, block);
+					v6blocks = chunk_cat_new("mm", &v6blocks, &block);
 					break;
 				default:
 					break;
@@ -2467,7 +2476,7 @@ static bool generate(private_x509_cert_t *cert, certificate_t *sign_cert,
 		while (enumerator->enumerate(enumerator, &id))
 		{
 			subtree = asn1_wrap(ASN1_SEQUENCE, "m", build_generalName(id));
-			permitted = chunk_cat("mm", permitted, subtree);
+			permitted = chunk_cat_new("mm", &permitted, &subtree);
 		}
 		enumerator->destroy(enumerator);
 		if (permitted.ptr)
@@ -2479,7 +2488,7 @@ static bool generate(private_x509_cert_t *cert, certificate_t *sign_cert,
 		while (enumerator->enumerate(enumerator, &id))
 		{
 			subtree = asn1_wrap(ASN1_SEQUENCE, "m", build_generalName(id));
-			excluded = chunk_cat("mm", excluded, subtree);
+			excluded = chunk_cat_new("mm", &excluded, &subtree);
 		}
 		enumerator->destroy(enumerator);
 		if (excluded.ptr)
@@ -2526,7 +2535,7 @@ static bool generate(private_x509_cert_t *cert, certificate_t *sign_cert,
 			}
 			chunk = asn1_wrap(ASN1_SEQUENCE, "mm",
 						asn1_wrap(ASN1_OID, "c", policy->oid), chunk);
-			certPolicies = chunk_cat("mm", certPolicies, chunk);
+			certPolicies = chunk_cat_new("mm", &certPolicies, &chunk);
 		}
 		enumerator->destroy(enumerator);
 
@@ -2548,7 +2557,7 @@ static bool generate(private_x509_cert_t *cert, certificate_t *sign_cert,
 			chunk = asn1_wrap(ASN1_SEQUENCE, "mm",
 						asn1_wrap(ASN1_OID, "c", mapping->issuer),
 						asn1_wrap(ASN1_OID, "c", mapping->subject));
-			policyMappings = chunk_cat("mm", policyMappings, chunk);
+			policyMappings = chunk_cat_new("mm", &policyMappings, &chunk);
 		}
 		enumerator->destroy(enumerator);
 
