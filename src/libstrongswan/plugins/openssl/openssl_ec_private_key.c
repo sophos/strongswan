@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2008-2016 Tobias Brunner
  * Copyright (C) 2009 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -61,6 +62,7 @@ struct private_openssl_ec_private_key_t {
 
 /* from openssl_ec_public_key */
 bool openssl_check_ec_key_curve(EVP_PKEY *key, int nid_curve);
+bool openssl_check_explicit_params(EVP_PKEY *key);
 
 /**
  * Build a DER encoded signature as in RFC 3279
@@ -473,8 +475,9 @@ openssl_ec_private_key_t *openssl_ec_private_key_load(key_type_t type,
 							 blob.len);
 	}
 
-	if (!key)
+	if (!key || openssl_check_explicit_params(key))
 	{
+		EVP_PKEY_free(key);
 		return NULL;
 	}
 	this = create_internal(key);

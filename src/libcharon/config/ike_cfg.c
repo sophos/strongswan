@@ -2,7 +2,8 @@
  * Copyright (C) 2012-2019 Tobias Brunner
  * Copyright (C) 2005-2007 Martin Willi
  * Copyright (C) 2005 Jan Hutter
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -96,6 +97,11 @@ struct private_ike_cfg_t {
 	bool certreq;
 
 	/**
+	 * should we send an OCSP status request?
+	 */
+	bool ocsp_certreq;
+
+	/**
 	 * enforce UDP encapsulation
 	 */
 	bool force_encap;
@@ -131,6 +137,12 @@ METHOD(ike_cfg_t, send_certreq, bool,
 	private_ike_cfg_t *this)
 {
 	return this->certreq;
+}
+
+METHOD(ike_cfg_t, send_ocsp_certreq, bool,
+	private_ike_cfg_t *this)
+{
+	return this->ocsp_certreq;
 }
 
 METHOD(ike_cfg_t, force_encap_, bool,
@@ -347,23 +359,23 @@ METHOD(ike_cfg_t, select_proposal, proposal_t*,
 	return proposal_select(this->proposals, proposals, flags);
 }
 
-METHOD(ike_cfg_t, get_dh_group, diffie_hellman_group_t,
-	private_ike_cfg_t *this)
+METHOD(ike_cfg_t, get_algorithm, uint16_t,
+	private_ike_cfg_t *this, transform_type_t type)
 {
 	enumerator_t *enumerator;
 	proposal_t *proposal;
-	uint16_t dh_group = MODP_NONE;
+	uint16_t alg = 0;
 
 	enumerator = this->proposals->create_enumerator(this->proposals);
 	while (enumerator->enumerate(enumerator, &proposal))
 	{
-		if (proposal->get_algorithm(proposal, DIFFIE_HELLMAN_GROUP, &dh_group, NULL))
+		if (proposal->get_algorithm(proposal, type, &alg, NULL))
 		{
 			break;
 		}
 	}
 	enumerator->destroy(enumerator);
-	return dh_group;
+	return alg;
 }
 
 METHOD(ike_cfg_t, equals, bool,
@@ -387,6 +399,7 @@ METHOD(ike_cfg_t, equals, bool,
 	return
 		this->version == other->version &&
 		this->certreq == other->certreq &&
+		this->ocsp_certreq == other->ocsp_certreq &&
 		this->force_encap == other->force_encap &&
 		this->fragmentation == other->fragmentation &&
 		this->childless == other->childless &&
@@ -586,6 +599,7 @@ ike_cfg_t *ike_cfg_create(ike_cfg_create_t *data)
 		.public = {
 			.get_version = _get_version,
 			.send_certreq = _send_certreq,
+			.send_ocsp_certreq = _send_ocsp_certreq,
 			.force_encap = _force_encap_,
 			.fragmentation = _fragmentation,
 			.childless = _childless,
@@ -602,7 +616,7 @@ ike_cfg_t *ike_cfg_create(ike_cfg_create_t *data)
 			.get_proposals = _get_proposals,
 			.select_proposal = _select_proposal,
 			.has_proposal = _has_proposal,
-			.get_dh_group = _get_dh_group,
+			.get_algorithm = _get_algorithm,
 			.equals = _equals,
 			.get_ref = _get_ref,
 			.destroy = _destroy,
@@ -610,6 +624,7 @@ ike_cfg_t *ike_cfg_create(ike_cfg_create_t *data)
 		.refcount = 1,
 		.version = data->version,
 		.certreq = !data->no_certreq,
+		.ocsp_certreq = data->ocsp_certreq,
 		.force_encap = data->force_encap,
 		.fragmentation = data->fragmentation,
 		.childless = data->childless,

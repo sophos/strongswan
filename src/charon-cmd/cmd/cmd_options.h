@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2013 Martin Willi
- * Copyright (C) 2013 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -41,6 +40,7 @@ enum cmd_option_type_t {
 	CMD_OPT_REMOTE_IDENTITY,
 	CMD_OPT_CERT,
 	CMD_OPT_RSA,
+	CMD_OPT_PRIV,
 	CMD_OPT_PKCS12,
 	CMD_OPT_AGENT,
 	CMD_OPT_LOCAL_TS,

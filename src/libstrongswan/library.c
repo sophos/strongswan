@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2009-2018 Tobias Brunner
  * Copyright (C) 2008 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -170,6 +171,7 @@ void library_deinit()
 	this->public.credmgr->destroy(this->public.credmgr);
 	this->public.creds->destroy(this->public.creds);
 	this->public.encoding->destroy(this->public.encoding);
+	this->public.ocsp->destroy(this->public.ocsp);
 	this->public.metadata->destroy(this->public.metadata);
 	this->public.crypto->destroy(this->public.crypto);
 	this->public.caps->destroy(this->public.caps);
@@ -400,6 +402,7 @@ bool library_init(char *settings, const char *namespace)
 	this->public.creds = credential_factory_create();
 	this->public.credmgr = credential_manager_create();
 	this->public.encoding = cred_encoding_create();
+	this->public.ocsp = ocsp_responders_create();
 	this->public.metadata = metadata_factory_create();
 	this->public.fetcher = fetcher_manager_create();
 	this->public.resolver = resolver_manager_create();

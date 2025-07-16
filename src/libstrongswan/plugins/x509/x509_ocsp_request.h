@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2008-2009 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ * Copyright (C) 2023 Andreas Steffen, strongSec GmbH
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -52,5 +54,14 @@ struct x509_ocsp_request_t {
  * @return				OCSP request, NULL on failure
  */
 x509_ocsp_request_t *x509_ocsp_request_gen(certificate_type_t type, va_list args);
+
+/**
+ * Load a X.509 OCSP request.
+ *
+ * @param type      certificate type, CERT_X509_OCSP_REQUEST only
+ * @param args      builder_part_t argument list
+ * @return          OCSP request, NULL on failure
+ */
+x509_ocsp_request_t *x509_ocsp_request_load(certificate_type_t type, va_list args);
 
 #endif /** X509_OCSP_REQUEST_H_ @}*/

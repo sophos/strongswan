@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2014 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2013 Martin Willi
- * Copyright (C) 2013 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -115,7 +114,7 @@ START_TEST(test_append_obj)
 
 		array_insert(array, ARRAY_HEAD, &y[3]);
 		array_insert(array, ARRAY_TAIL, &y[4]);
-		ck_assert_int_eq(array_count(array), 2);;
+		ck_assert_int_eq(array_count(array), 2);
 
 		/* 3, 4 */
 

@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2011-2016 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -143,7 +144,7 @@ static bool generate_iv(private_iv_manager_t *this, iv_data_t *iv)
 	else
 	{
 		/* initial phase 2 IV = hash(last_phase1_block | mid) */
-		uint32_t net;;
+		uint32_t net;
 		chunk_t data;
 
 		net = htonl(iv->mid);

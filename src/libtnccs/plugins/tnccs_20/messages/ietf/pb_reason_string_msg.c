@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Sansar Choinyambuu
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -108,7 +109,7 @@ METHOD(pb_tnc_msg_t, process, status_t,
 		reader->destroy(reader);
 		*offset = 0;
 		return FAILED;
-	};
+	}
 	this->reason_string = chunk_clone(this->reason_string);
 
 	if (this->reason_string.len &&
@@ -126,7 +127,7 @@ METHOD(pb_tnc_msg_t, process, status_t,
 		reader->destroy(reader);
 		*offset = 4 + this->reason_string.len;
 		return FAILED;
-	};
+	}
 	this->language_code = chunk_clone(this->language_code);
 	reader->destroy(reader);
 

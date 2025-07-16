@@ -3,7 +3,8 @@
     Copyright (C) 2012-2020 Tobias Brunner
     Copyright (C) 2012 Giuliano Grassi
     Copyright (C) 2012 Ralf Sager
-    HSR Hochschule fuer Technik Rapperswil
+
+    Copyright (C) secunet Security Networks AG
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
@@ -122,7 +123,7 @@
     <string name="profile_select_one_app">Eine App ausgewählt</string>
     <string name="profile_select_x_apps">%1$d Apps ausgewählt</string>
     <string name="profile_proposals_label">Algorithmen</string>
-    <string name="profile_proposals_intro">Optionale spezifische Algorithmen für IKEv2 und/oder IPsec/ESP die statt der Standardwerte verwendet werden sollen. Eine <a href="https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2CipherSuites">Liste gültiger Algorithmen</a> kann unserem Wiki entnommen werden (nicht alle werden von dieser App unterstützt). Beide Felder erwarten eine Liste von Algorithmen, jeweils mit einem Bindestrich getrennt.</string>
+    <string name="profile_proposals_intro">Optionale spezifische Algorithmen für IKEv2 und/oder IPsec/ESP die statt der Standardwerte verwendet werden sollen. Eine <a href="https://docs.strongswan.org/docs/5.9/config/IKEv2CipherSuites.html">Liste gültiger Algorithmen</a> kann unserem Wiki entnommen werden (nicht alle werden von dieser App unterstützt). Beide Felder erwarten eine Liste von Algorithmen, jeweils mit einem Bindestrich getrennt.</string>
     <string name="profile_proposals_ike_label">IKEv2 Algorithmen</string>
     <string name="profile_proposals_ike_hint">Für non-AEAD/klassische Verschlüsselungsalgorithmen wird ein Integritätsalgorithmus, eine pseudozufällige Funktion (PRF, optional, ansonsten wird eine auf dem Integritätsalgorithmus basierende verwendet) und eine Diffie-Hellman Gruppe benötigt (z.B. aes256-sha256-ecp256). Für kombinierte/AEAD Algorithmen wird der Integritätsalgorithmus weggelassen aber eine PRF wird benötigt (z.B. aes256gcm16-prfsha256-ecp256).</string>
     <string name="profile_proposals_esp_label">IPsec/ESP Algorithmen</string>
@@ -138,6 +139,7 @@
     <string name="profile_cert_import">Zertifikat aus VPN Profil importieren</string>
     <string name="profile_cert_alias">Zertifikat für \"%1$s\"</string>
     <string name="profile_profile_id">Profil-ID</string>
+    <string name="profile_managed">Verwaltetes Profil</string>
     <!-- Warnings/Notifications in the details view -->
     <string name="alert_text_no_input_gateway">Ein Wert wird benötigt, um die Verbindung aufbauen zu können</string>
     <string name="alert_text_no_input_username">Bitte geben Sie Ihren Benutzernamen ein</string>
@@ -147,6 +149,7 @@
     <string name="alert_text_no_subnets">Bitte geben Sie mit Leerzeichen getrennte, gültige Subnetzte und/oder IP-Adressen ein</string>
     <string name="alert_text_no_ips">Bitte geben Sie mit Leerzeichen getrennte, gültige IP-Adressen ein</string>
     <string name="alert_text_no_proposal">Bitte geben Sie eine mit Bindestrichen getrennte, gültige Liste von Algorithmen ein</string>
+    <string name="alert_text_vpn_profile_read_only">Dieses Profil wird von Ihrem Administrator verwaltet und kann nicht bearbeitet werden. Nur das Passwort kann geändert werden</string>
     <string name="tnc_notice_title">EAP-TNC kann Ihre Privatsphäre beeinträchtigen</string>
     <string name="tnc_notice_subtitle">Gerätedaten werden an den Server-Betreiber gesendet</string>
     <string name="tnc_notice_details"><![CDATA[<p>Trusted Network Connect (TNC) erlaubt Server-Betreibern den Gesundheitszustand von Endgeräten zu prüfen.</p><p>Dazu kann der Betreiber Daten verlangen, wie etwa eine eindeutige Identifikationsnummer, eine Liste der installierten Pakete, Systemeinstellungen oder kryptografische Prüfsummen von Dateien.</p><b>Solche Daten werden nur übermittelt nachdem die Identität des Servers geprüft wurde.</b>]]></string>

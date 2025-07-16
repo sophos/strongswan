@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2008 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -207,7 +208,7 @@ static bool read_triplets(private_eap_sim_file_triplets_t *this, char *path)
 					parse_token(triplet->kc, token, SIM_KC_LEN);
 					continue;
 				default:
-					break;;
+					break;
 			}
 			break;
 		}

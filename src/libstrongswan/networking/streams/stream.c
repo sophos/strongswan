@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2013 Martin Willi
- * Copyright (C) 2013 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -186,8 +187,6 @@ static bool watch(private_stream_t *this, int fd, watcher_event_t event)
 			{
 				this->write_cb = cb;
 			}
-			break;
-		case WATCHER_EXCEPT:
 			break;
 	}
 	return keep;

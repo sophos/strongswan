@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
  * Copyright (C) 2007 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -332,7 +333,7 @@ static MYSQL_STMT* run(MYSQL *mysql, char *sql, va_list *args)
 				}
 				case DB_TEXT:
 				{
-					bind[i].buffer_type = MYSQL_TYPE_STRING;;
+					bind[i].buffer_type = MYSQL_TYPE_STRING;
 					bind[i].buffer = va_arg(*args, char*);
 					if (bind[i].buffer)
 					{
@@ -398,7 +399,7 @@ typedef struct {
 	conn_t *conn;
 	/** value for INT, UINT, double */
 	union {
-		void *p_void;;
+		void *p_void;
 		int *p_int;
 		u_int *p_uint;
 		double *p_double;

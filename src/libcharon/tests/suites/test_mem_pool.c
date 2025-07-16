@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2014 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -29,7 +30,7 @@ static void assert_host(char *expected, host_t *host)
 		verifier = host_create_from_string(expected, 0);
 		ck_assert_msg(host, "expected IP %+H != NULL", verifier);
 		ck_assert_msg(verifier->ip_equals(verifier, host), "expected IP %+H != "
-					  "%+H", verifier, host);;
+					  "%+H", verifier, host);
 		verifier->destroy(verifier);
 	}
 }

@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2013 Tobias Brunner
  * Copyright (C) 2008 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -124,12 +125,27 @@ END_TEST
  * clear
  */
 
+ADDRESS_SANITIZER_EXCLUDE
+static bool cleared(u_char *ptr)
+{
+	int i;
+
+	for (i = 0; i < 64; i += 2)
+	{
+		if (ptr[i] != 0 && ptr[i] == i &&
+			ptr[i+1] != 0 && ptr[i+1] == i+1)
+		{
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 START_TEST(test_chunk_clear)
 {
 	chunk_t chunk;
 	u_char *ptr;
 	int i;
-	bool cleared = TRUE;
 
 	chunk = chunk_empty;
 	chunk_clear(&chunk);
@@ -146,17 +162,8 @@ START_TEST(test_chunk_clear)
 	 * test directly, as it might allocate data at the freed area.  comparing
 	 * two bytes at once reduces the chances of conflicts if memory got
 	 * overwritten already */
-	for (i = 0; i < 64; i += 2)
-	{
-		if (ptr[i] != 0 && ptr[i] == i &&
-			ptr[i+1] != 0 && ptr[i+1] == i+1)
-		{
-			cleared = FALSE;
-			break;
-		}
-	}
+	ck_assert(cleared(ptr));
 	assert_chunk_empty(chunk);
-	ck_assert(cleared);
 }
 END_TEST
 
@@ -198,6 +205,27 @@ END_TEST
  * chunk_create_cat
  */
 
+ADDRESS_SANITIZER_EXCLUDE
+bool chunk_equals_nosan(chunk_t a, chunk_t b)
+{
+	int i;
+
+	/* can't use memcmp() or any function using it, as that is again
+	 * sanitize-checked */
+	if (a.len != b.len)
+	{
+		return FALSE;
+	}
+	for (i = 0; i < b.len; i++)
+	{
+		if (a.ptr[i] != b.ptr[i])
+		{
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 START_TEST(test_chunk_create_cat)
 {
 	chunk_t foo, bar;
@@ -235,8 +263,8 @@ START_TEST(test_chunk_create_cat)
 	ck_assert_int_eq(c.len, 6);
 	ck_assert(chunk_equals(c, chunk_from_str("foobar")));
 	/* check memory area of cleared chunk */
-	ck_assert(!chunk_equals(foo, chunk_create(ptra, 3)));
-	ck_assert(!chunk_equals(bar, chunk_create(ptrb, 3)));
+	ck_assert(!chunk_equals_nosan(foo, chunk_create(ptra, 3)));
+	ck_assert(!chunk_equals_nosan(bar, chunk_create(ptrb, 3)));
 }
 END_TEST
 
@@ -537,6 +565,57 @@ START_TEST(test_base32)
 		out = chunk_to_base32(chunk_create(test[i].in, strlen(test[i].in)), NULL);
 		ck_assert_str_eq(out.ptr, test[i].out);
 		free(out.ptr);
+	}
+}
+END_TEST
+
+/*******************************************************************************
+ * DEC encoding test
+ */
+
+START_TEST(test_dec)
+{
+	typedef struct {
+		chunk_t in;
+		char *out;
+	} testdata_t;
+
+	testdata_t test[] = {
+		{  chunk_from_chars(            0x00),        "0" },
+		{  chunk_from_chars(            0x09),        "9" },
+		{  chunk_from_chars(            0x0a),       "10" },
+		{  chunk_from_chars(            0x13),       "19" },
+		{  chunk_from_chars(            0x14),       "20" },
+		{  chunk_from_chars(            0x63),       "99" },
+		{  chunk_from_chars(            0x64),      "100" },
+		{  chunk_from_chars(            0x65),      "101" },
+		{  chunk_from_chars(            0xff),      "255" },
+		{  chunk_from_chars(      0x00, 0xff),      "255" },
+		{  chunk_from_chars(      0x01, 0x00),      "256" },
+		{  chunk_from_chars(      0x01, 0x03),      "259" },
+		{  chunk_from_chars(      0x01, 0x04),      "260" },
+		{  chunk_from_chars(      0x09, 0xff),     "2559" },
+		{  chunk_from_chars(      0x0a, 0x00),     "2560" },
+		{  chunk_from_chars(      0x0a, 0x01),     "2561" },
+		{  chunk_from_chars(      0xff, 0xff),    "65535" },
+		{  chunk_from_chars(0x00, 0xff, 0xff),    "65535" },
+		{  chunk_from_chars(0x01, 0x00, 0x00),    "65536" },
+		{  chunk_from_chars(0x01, 0x86, 0x9f),    "99999" },
+		{  chunk_from_chars(0x01, 0x86, 0xa0),   "100000" },
+		{  chunk_from_chars(0x0f, 0x42, 0x40),  "1000000" },
+		{  chunk_from_chars(0xa9, 0x8a, 0xc7), "11111111" },
+		{  chunk_from_chars(0xbc, 0x61, 0x4e), "12345678" },
+	};
+
+	int i;
+
+	for (i = 0; i < countof(test); i++)
+	{
+		char buf[10];
+		chunk_t out;
+
+		out = chunk_to_dec(test[i].in, buf);
+		ck_assert_str_eq(out.ptr, test[i].out);
 	}
 }
 END_TEST
@@ -1162,6 +1241,7 @@ Suite *chunk_suite_create()
 	tcase_add_test(tc, test_base64);
 	tcase_add_test(tc, test_base32);
 	tcase_add_test(tc, test_base16);
+	tcase_add_test(tc, test_dec);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("chunk_mac");

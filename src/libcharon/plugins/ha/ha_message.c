@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2008 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -282,7 +283,7 @@ METHOD(ha_message_t, add_attribute, void,
 			*(uint16_t*)(this->buf.ptr + this->buf.len) = htons(chunk.len);
 			memcpy(this->buf.ptr + this->buf.len + sizeof(uint16_t),
 				   chunk.ptr, chunk.len);
-			this->buf.len += chunk.len + sizeof(uint16_t);;
+			this->buf.len += chunk.len + sizeof(uint16_t);
 			break;
 		}
 		/** traffic_selector_t */

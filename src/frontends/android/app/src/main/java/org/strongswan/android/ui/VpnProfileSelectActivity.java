@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2012-2018 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -44,7 +45,7 @@ public class VpnProfileSelectActivity extends AppCompatActivity implements OnVpn
 	public void onVpnProfileSelected(VpnProfile profile)
 	{
 		Intent shortcut = new Intent(VpnProfileControlActivity.START_PROFILE);
-		shortcut.putExtra(VpnProfileControlActivity.EXTRA_VPN_PROFILE_ID, profile.getUUID().toString());
+		shortcut.putExtra(VpnProfileControlActivity.EXTRA_VPN_PROFILE_UUID, profile.getUUID().toString());
 
 		ShortcutInfoCompat.Builder builder = new ShortcutInfoCompat.Builder(this, profile.getUUID().toString());
 		builder.setIntent(shortcut);

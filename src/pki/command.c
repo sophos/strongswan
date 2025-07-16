@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -117,18 +118,39 @@ int command_getopt(char **arg)
 		switch (op)
 		{
 			case '+':
+			case 'v':
+				continue;
+			default:
+				*arg = optarg;
+				return op;
+		}
+	}
+}
+
+/**
+ * Process options common for all commands
+ */
+static bool process_common_opts()
+{
+	while (TRUE)
+	{
+		switch (getopt_long(argc, argv, command_optstring, command_opts, NULL))
+		{
+			case '+':
 				if (!options->from(options, optarg, &argc, &argv, optind))
 				{
-					/* a error value */
-					return 255;
+					return FALSE;
 				}
 				continue;
 			case 'v':
 				dbg_default_set_level(atoi(optarg));
 				continue;
 			default:
-				*arg = optarg;
-				return op;
+				continue;
+			case '?':
+				return FALSE;
+			case EOF:
+				return TRUE;
 		}
 	}
 }
@@ -278,6 +300,11 @@ int command_dispatch(int c, char *v[])
 		{
 			active = i;
 			build_opts();
+			if (!process_common_opts())
+			{
+				return command_usage("invalid options");
+			}
+			optind = 2;
 			return cmds[i].call();
 		}
 	}

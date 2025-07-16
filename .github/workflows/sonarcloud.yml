@@ -26,13 +26,13 @@ jobs:
     env:
       TEST: sonarcloud
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
           path: |
-            ~/.ccache
+            ~/.cache/ccache
             ~/.sonar-cache
           key: ccache-sonarcloud-${{ github.sha }}
           restore-keys: |
@@ -45,7 +45,7 @@ jobs:
       # for C builds, so we follow the "any CI" instructions
       - name: Install sonar-scanner
         env:
-          SONAR_SCANNER_VERSION: 4.6.2.2472
+          SONAR_SCANNER_VERSION: 5.0.1.3006
         run: |
           export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
           curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip

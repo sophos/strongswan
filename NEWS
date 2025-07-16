@@ -1,3 +1,275 @@
+strongswan-5.9.14
+-----------------
+
+- Support for the IKEv2 OCSP extensions (RFC 4806) has been added, which allows
+  peers to request and send OCSP responses directly in IKEv2.
+
+- Validation of X.509 name constraints in the constraints plugin has been
+  refactored to align with RFC 5280.
+
+- The dhcp plugin has been ported to FreeBSD/macOS.
+
+- The openssl plugin is now compatible with AWS-LC.
+
+- Overflows of unique identifiers (e.g. Netlink sequence numbers or reqids) are
+  now handled gracefully.
+
+- Updated the pkcs11.h header based on the latest OpenSC version in order to
+  include new algorithm and struct definitions for the pkcs11 plugin.
+  Added support for PSS padding in smartcard-based RSA signatures using either
+  on-chip or external data hashing.
+
+- Added keyid and certid handles in the pki --ocsp command so that keys and/or
+  certificates can be stored on a smartcard or in a TPM 2.0 device.
+
+- Fail SA installation on Linux if replay protection is disabled while ESN is
+  enabled, which the kernel currently doesn't support.
+
+
+strongswan-5.9.13
+-----------------
+
+- Fixes a regression with handling OCSP error responses and adds a new
+  option to specify the length of nonces in OCSP requests.  Also adds some
+  other improvements for OCSP handling and fuzzers for OCSP
+  requests/responses.
+
+
+strongswan-5.9.12
+-----------------
+
+- Fixed a vulnerability in charon-tkm related to processing DH public values
+  that can lead to a buffer overflow and potentially remote code execution.
+  This vulnerability has been registered as CVE-2023-41913.
+
+- The new `pki --ocsp` command produces OCSP responses based on certificate
+  status information provided by plugins.
+
+  Two sources are currently available, the openxpki plugin that directly
+  accesses the OpenXPKI database and the `--index` argument, which reads
+  certificate status information from OpenSSL-style index.txt files.
+
+- The cert-enroll script handles the initial enrollment of an X.509 host
+  certificate with a PKI server via the EST or SCEP protocols.
+
+  Run as a systemd timer or via a crontab entry the script daily checks the
+  expiration date of the host certificate. When a given deadline is reached,
+  the host certificate is automatically renewed via EST or SCEP re-enrollment
+  based on the possession of the old private key and the matching certificate.
+
+- The --priv argument for charon-cmd allows using any type of private key.
+
+- Support for nameConstraints of type iPAddress has been added (the openssl
+  plugin previously didn't support nameConstraints at all).
+
+- SANs of type uniformResourceIdentifier can now be encoded in certificates.
+
+- Password-less PKCS#12 and PKCS#8 files are supported.
+
+- A new global option allows preventing peers from authenticating with trusted
+  end-entity certificates (i.e. local certificates).
+
+- ECDSA public keys that encode curve parameters explicitly are now rejected by
+  all plugins that support ECDSA.
+
+- charon-nm now actually uses the XFRM interfaces added with 5.9.10, it can
+  also use the name in connection.interface-name.
+
+- The resolve plugin tries to maintain the order of installed DNS servers.
+
+- The kernel-libipsec plugin always installs routes even if no address is found
+  in the local traffic selectors.
+
+- Increased the default receive buffer size for Netlink sockets to 8 MiB and
+  simplified its configuration.
+
+- Copy the issuer's subjectKeyIdentifier as authorityKeyIdentifier instead of
+  always generating a hash of the subjectPublicKey.
+
+- Fixed issues while reestablishing multiple CHILD_SAs (e.g. after a DPD
+  timeout) that could cause a reqid to get assigned to multiple CHILD_SAs with
+  unrelated traffic selectors.
+
+- Fixed a possible infinite loop issue in watcher_t and removed WATCHER_EXCEPT,
+  instead callbacks are always invoked even if only errors are signaled.
+
+- Fixed a regression in the IKE_SA_INIT tracking code added with 5.9.6 when
+  handling invalid messages.
+
+- Fixed adding the XFRMA_REPLAY_ESN_VAL attribute twice when updating SAs.
+
+- Correctly encode SPI from REKEY_SA notify in CHILD_SA_NOT_FOUND notify if
+  CHILD_SA is not found during rekeying.
+
+- The testing environment is now based on Debian 12 (bookworm), by default.
+
+
+strongswan-5.9.11
+-----------------
+
+- A deadlock in the vici plugin has been fixed that could get triggered when
+  multiple connections were initiated/terminated concurrently and control-log
+  events were raised by the watcher_t component.
+
+- CRLs have to be signed by a certificate that has the cRLSign keyUsage bit
+  encoded (even if it's a CA), or a CA certificate without keyUsage extension.
+
+- Optional CA labels in EST server URIs are supported by `pki --est/estca`.
+
+- CMS-style signatures in PKCS#7 containers are supported by the pkcs7 and
+  openssl plugins, which allows verifying RSA-PSS and ECDSA signatures.
+
+- Fixed a regression in the server implementation of EAP-TLS with TLS 1.2 or
+  earlier that was introduced with 5.9.10.
+
+- Ensure the TLS handshake is complete in the EAP-TLS client with TLS <= 1.2.
+
+- kernel-libipsec can process raw ESP packets on Linux (disabled by default) and
+  gained support for trap policies.
+
+- The dhcp plugin uses an alternate method to determine the source address
+  for unicast DHCP requests that's not affected by interface filtering.
+
+- Certificate and trust chain selection as initiator has been improved in case
+  the local trust chain is incomplete and an unrelated certreq is received.
+
+- ECDSA and EdDSA keys in IPSECKEY RRs are supported by the ipseckey plugin.
+
+- To bypass tunnel mode SAs/policies, the kernel-wfp plugin installs bypass
+  policies also on the FWPM_SUBLAYER_IPSEC_TUNNEL sublayer.
+
+- Stale OCSP responses are now replace in-place in the certificate cache.
+
+- Fixed parsing of SCEP server capabilities by `pki --scep/scepca`.
+
+
+strongswan-5.9.10
+-----------------
+
+- Fixed a vulnerability related to certificate verification in TLS-based EAP
+  methods that leads to an authentication bypass followed by an expired pointer
+  dereference that results in a denial of service and possibly even remote code
+  execution.
+  This vulnerability has been registered as CVE-2023-26463.
+
+- Added support for full packet hardware offload for IPsec SAs and policies with
+  Linux 6.2 kernels to the kernel-netlink plugin.
+
+- TLS-based EAP methods now use the standardized key derivation when used
+  with TLS 1.3.
+
+- The eap-tls plugin properly supports TLS 1.3 according to RFC 9190, by
+  implementing the "protected success indication".
+
+- With the `prefer` value for the `childless` setting, initiators will create
+  a childless IKE_SA if the responder supports the extension.
+
+- Routes via XFRM interfaces can optionally be installed automatically by
+  enabling the `install_routes_xfrmi` option of the kernel-netlink plugin.
+
+- charon-nm now uses XFRM interfaces instead of dummy TUN devices to avoid
+  issues with name resolution if they are supported by the kernel.
+
+- The `pki --req` command can encode extendedKeyUsage (EKU) flags in the
+  PKCS#10 certificate signing request.
+
+- The `pki --issue` command adopts EKU flags from CSRs but allows modifying them
+  (replace them completely, or adding/removing specific flags).
+
+- On Linux 6.2 kernels, the last use times of CHILD_SAs are determined via the
+  IPsec SAs instead of the policies.
+
+- For libcurl with MultiSSL support, the curl plugin provides an option to
+  select the SSL/TLS backend.
+
+
+strongswan-5.9.9
+----------------
+
+- The charon.reqid_base setting allows specifying the first reqid that's
+  automatically assigned to a CHILD_SA.
+
+- The path/command for resolvconf(8) used by the resolve plugin is now
+  configurable.
+
+- The resolve plugin doesn't generate unique interface names for name servers
+  anymore. Instead, all available name servers are associated with a single,
+  configurable interface name.
+
+- Serial numbers of certificates and CRLs are now always returned in canonical
+  form (i.e. without leading zeros).
+
+- The kernel-netlink plugin now logs extended ACK error/warning messages.
+
+
+strongswan-5.9.8
+----------------
+
+- Fixed a vulnerability related to accessing untrusted OCSP URIs and CDPs in
+  certificates that could lead to a denial-of-service attack.
+  This vulnerability has been registered as CVE-2022-40617.
+
+- The pki --scep|--scepca commands support the HTTP-based "Simple Certificate
+  Enrollment Protocol" (RFC 8894 SCEP) replacing the old and long deprecated
+  scepclient that has been removed.
+
+- The pki --est|estca commands support the HTTPS-based "Enrollment over Secure
+  Transport" (RFC 7030 EST) protocol.
+
+- The pki --req command can create a certificate request based on an existing
+  PKCS#10 template by replacing the public key and re-generating the signature
+  with the new private key.
+
+- For IKEv2, the ike_updown() "up" event and the state change to IKE_ESTABLISHED
+  are now triggered after all IKE-related tasks are done.
+
+- The ike_cfg_t object is now always replaced together with the peer_cfg_t
+  object that's set on an IKE_SA during authentication.
+
+- The gcm plugin has been enabled by default, so that the TLS 1.3 unit tests
+  can be completed successfully with just the default plugins.
+
+- The socket plugins don't set the SO_REUSEADDR option anymore on the IKE UDP
+  sockets, so an error is triggered if e.g. two daemons (e.g. charon and
+  charon-systemd) are running concurrently using the same ports.
+
+- The charon.rsa_pss_trailerfield setting generates an algorithmIdentifier with
+  explicit trailerField.
+
+
+strongswan-5.9.7
+----------------
+
+- The IKEv2 key derivation is now delayed until the keys are actually needed for
+  the next message. Instead of deriving the keys while processing an IKE_SA_INIT
+  request, it's delayed until the corresponding IKE_AUTH request is received.
+  DH implementations now must do costly public key validation and the key
+  derivation in get_shared_secret().
+
+- Inbound IKEv2 messages are not parsed immediately anymore, instead we first
+  check a request's MID and compare its hash to that of the previous request to
+  decide if it's a valid retransmit (for fragmented message we only keep track
+  of the first fragment, so we don't have to wait for all fragments and
+  reconstruct the message, which we did before).
+
+- The retransmission logic in the dhcp plugin has been fixed so that four
+  retransmits are sent per DHCP request over a total of 15 seconds (previously,
+  it could happen that all were sent within the same second without any time
+  to actually wait for a response).
+
+- The connmark plugin now considers configured masks in installed firewall
+  rules, which allows using the upper parts of the mark value for other
+  purposes.  Just consider that the daemon might have to be restarted regularly
+  to reset the global unique mark counter as that's unaware of any masks.
+
+- Child config selection has been improved as responder in cases where multiple
+  children use transport mode traffic selectors.
+
+- The outbound SA/policy is now also removed after IKEv1 CHILD_SA rekeyings.
+
+- The openssl plugin supports AES and Camellia in CTR mode.
+
+
 strongswan-5.9.6
 ----------------
 
@@ -90,7 +362,7 @@ strongswan-5.9.4
   salt lengths.
   This vulnerability has been registered as CVE-2021-41990.
 
-- Fixed a denial-of-service vulnerabililty in the in-memory certificate cache
+- Fixed a denial-of-service vulnerability in the in-memory certificate cache
   if certificates are replaced and a very large random value caused an integer
   overflow.
   This vulnerability has been registered as CVE-2021-41991.
@@ -1502,7 +1774,7 @@ strongswan-5.0.3
   PT-TLS (RFC 6876), a Posture Transport Protocol over TLS.
 
 - The charon systime-fix plugin can disable certificate lifetime checks on
-  embedded systems if the system time is obviously out of sync after bootup.
+  embedded systems if the system time is obviously out of sync after boot-up.
   Certificates lifetimes get checked once the system time gets sane, closing
   or reauthenticating connections using expired certificates.
 
@@ -1658,8 +1930,7 @@ strongswan-5.0.0
   keying protocols. The feature-set of IKEv1 in charon is almost on par with
   pluto, but currently does not support AH or bundled AH+ESP SAs. Beside
   RSA/ECDSA, PSK and XAuth, charon also supports the Hybrid authentication
-  mode. Information for interoperability and migration is available at
-  https://wiki.strongswan.org/projects/strongswan/wiki/CharonPlutoIKEv1.
+  mode.
 
 - Charon's bus_t has been refactored so that loggers and other listeners are
   now handled separately.  The single lock was previously cause for deadlocks
@@ -2089,8 +2360,7 @@ strongswan-4.4.0
 
 - The IKEv2 High Availability plugin has been integrated. It provides
   load sharing and failover capabilities in a cluster of currently two nodes,
-  based on an extend ClusterIP kernel module. More information is available at
-  https://wiki.strongswan.org/projects/strongswan/wiki/HighAvailability.
+  based on an extend ClusterIP kernel module.
   The development of the High Availability functionality was sponsored by
   secunet Security Networks AG.
 
@@ -2250,7 +2520,7 @@ strongswan-4.3.4
 ----------------
 
 - IKEv2 charon daemon ported to FreeBSD and Mac OS X. Installation details can
-  be found on wiki.strongswan.org.
+  be found in the documentation.
 
 - ipsec statusall shows the number of bytes transmitted and received over
   ESP connections configured by the IKEv2 charon daemon.
@@ -2797,8 +3067,7 @@ strongswan-4.1.7
   simulate a NAT situation and trick the other peer into NAT mode (IKEv2 only).
 
 - Preview of strongSwan Manager, a web based configuration and monitoring
-  application. It uses a new XML control interface to query the IKEv2 daemon
-  (see https://wiki.strongswan.org/wiki/Manager).
+  application. It uses a new XML control interface to query the IKEv2 daemon.
 
 - Experimental SQLite configuration backend which will provide the configuration
   interface for strongSwan Manager in future releases.

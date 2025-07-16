@@ -1,6 +1,8 @@
 /*
+ * Copyright (C) 2023 Tobias Brunner
  * Copyright (C) 2006 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,6 +23,49 @@
 #include <utils/utils.h>
 
 #include "enum.h"
+
+/*
+ * Described in header
+ */
+void enum_add_enum_names(enum_name_t *e, enum_name_t *names)
+{
+	if (e)
+	{
+		do
+		{
+			if (!e->next)
+			{
+				e->next = names;
+				break;
+			}
+			else if (e->next == names)
+			{
+				break;
+			}
+		}
+		while ((e = e->next));
+	}
+}
+
+/*
+ * Described in header
+ */
+void enum_remove_enum_names(enum_name_t *e, enum_name_t *names)
+{
+	if (e)
+	{
+		do
+		{
+			if (e->next == names)
+			{
+				e->next = names->next;
+				names->next = NULL;
+				break;
+			}
+		}
+		while ((e = e->next));
+	}
+}
 
 /**
  * See header.
@@ -97,7 +142,7 @@ char *enum_flags_to_string(enum_name_t *e, u_int val, char *buf, size_t len)
 		return buf;
 	}
 
-	if (snprintf(buf, len, e->names[0]) >= len)
+	if (snprintf(buf, len, "%s", e->names[0]) >= len)
 	{
 		return NULL;
 	}

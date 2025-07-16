@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2015 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2014 Martin Willi
- * Copyright (C) 2014 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -168,7 +167,7 @@ static void compare_vici(enumerator_t *parse, enumerator_t *tmpl)
 {
 	vici_type_t type, ttype;
 	char *name, *tname;
-	chunk_t data, tdata;;
+	chunk_t data, tdata;
 
 	while (TRUE)
 	{

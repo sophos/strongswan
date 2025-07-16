@@ -119,7 +119,7 @@
     <string name="profile_select_one_app">已选择一个应用程序</string>
     <string name="profile_select_x_apps">%1$d 应用程序被选择</string>
     <string name="profile_proposals_label">算法</string>
-    <string name="profile_proposals_intro">（可选）配置用于IKEv2和/或IPsec/ESP的特定算法，而不是默认算法。请参阅我们的wiki以了解<a href="https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2CipherSuites">算法标识符列表</a>（请注意，此应用程序并不支持所有标识符）。这两个字段都包含一个算法列表，每个算法用连字符分隔。</string>
+    <string name="profile_proposals_intro">（可选）配置用于IKEv2和/或IPsec/ESP的特定算法，而不是默认算法。请参阅我们的wiki以了解<a href="https://docs.strongswan.org/docs/5.9/config/IKEv2CipherSuites.html">算法标识符列表</a>（请注意，此应用程序并不支持所有标识符）。这两个字段都包含一个算法列表，每个算法用连字符分隔。</string>
     <string name="profile_proposals_ike_label">IKEv2算法</string>
     <string name="profile_proposals_ike_hint">对于非AEAD/经典加密算法，需要完整性算法、伪随机函数（可选，默认为基于完整性算法的函数）和Diffie-Hellman组（例如aes256-sha256-ecp256）。对于组合模式/AEAD算法，省略完整性算法，但需要PRF（例如aes256gcm16-prfsha256-ecp256）。</string>
     <string name="profile_proposals_esp_label">IPsec/ESP 算法</string>
@@ -135,6 +135,7 @@
     <string name="profile_cert_import">从VPN配置导入证书</string>
     <string name="profile_cert_alias">\"%1$s\" 所对应的证书</string>
     <string name="profile_profile_id">配置文件ID</string>
+    <string name="profile_managed">Managed profile</string>
     <!-- Warnings/Notifications in the details view -->
     <string name="alert_text_no_input_gateway">必填信息以初始化连接</string>
     <string name="alert_text_no_input_username">请输入您的用户名</string>
@@ -144,6 +145,7 @@
     <string name="alert_text_no_subnets">请输入有效的子网和/或IP地址，用空格分隔</string>
     <string name="alert_text_no_ips">请输入有效的IP地址，以空格分隔</string>
     <string name="alert_text_no_proposal">请输入用连字符分隔的有效算法列表</string>
+    <string name="alert_text_vpn_profile_read_only">This VPN profile is managed by your administrator and can\'t be modified. You can only change the password</string>
     <string name="tnc_notice_title">EAP-TNC可能会影响您的隐私</string>
     <string name="tnc_notice_subtitle">设备数据已被发送至服务器管理员</string>
     <string name="tnc_notice_details"><![CDATA[<p>可信网络连接t (TNC) 允许服务器管理员评定一个用户设备的状况。</p><p>出于此目的，服务器管理员可能要求以下数据如独立ID、已安装软件列表、系统设置、或加密过的文件校验值。</p><b>任何数据都仅将在验证过服务器的身份ID之后被发出。</b>]]></string>

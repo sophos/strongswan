@@ -2,7 +2,8 @@
  * Copyright (C) 2012 Tobias Brunner
  * Copyright (C) 2012 Giuliano Grassi
  * Copyright (C) 2012 Ralf Sager
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -60,11 +61,13 @@ public class VpnProfileAdapter extends ArrayAdapter<VpnProfile>
 			vpnProfileView = inflater.inflate(resource, null);
 		}
 		VpnProfile profile = getItem(position);
-		TextView tv = (TextView)vpnProfileView.findViewById(R.id.profile_item_name);
+		TextView tv = vpnProfileView.findViewById(R.id.profile_item_name);
 		tv.setText(profile.getName());
-		tv = (TextView)vpnProfileView.findViewById(R.id.profile_item_gateway);
+		tv = vpnProfileView.findViewById(R.id.profile_item_managed);
+		tv.setVisibility(profile.isReadOnly() ? View.VISIBLE : View.GONE);
+		tv = vpnProfileView.findViewById(R.id.profile_item_gateway);
 		tv.setText(getContext().getString(R.string.profile_gateway_label) + ": " + profile.getGateway());
-		tv = (TextView)vpnProfileView.findViewById(R.id.profile_item_username);
+		tv = vpnProfileView.findViewById(R.id.profile_item_username);
 		if (profile.getVpnType().has(VpnTypeFeature.USER_PASS))
 		{	/* if the view is reused we make sure it is visible */
 			tv.setVisibility(View.VISIBLE);
@@ -80,7 +83,7 @@ public class VpnProfileAdapter extends ArrayAdapter<VpnProfile>
 		{
 			tv.setVisibility(View.GONE);
 		}
-		tv = (TextView)vpnProfileView.findViewById(R.id.profile_item_certificate);
+		tv = vpnProfileView.findViewById(R.id.profile_item_certificate);
 		if (profile.getVpnType().has(VpnTypeFeature.CERTIFICATE))
 		{
 			tv.setText(getContext().getString(R.string.profile_user_certificate_label) + ": " + profile.getUserCertificateAlias());
@@ -102,7 +105,8 @@ public class VpnProfileAdapter extends ArrayAdapter<VpnProfile>
 
 	private void sortItems()
 	{
-		Collections.sort(this.items, new Comparator<VpnProfile>() {
+		Collections.sort(this.items, new Comparator<VpnProfile>()
+		{
 			@Override
 			public int compare(VpnProfile lhs, VpnProfile rhs)
 			{
