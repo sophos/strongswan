@@ -31,6 +31,7 @@
 #include <utils/debug.h>
 
 #ifdef WIN32
+#define CALLBACK WINAPI
 # include <psapi.h>
 /* missing in MinGW */
 #ifdef WIN64
