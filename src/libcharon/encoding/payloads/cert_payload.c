@@ -166,7 +166,9 @@ METHOD(payload_t, verify, status_t,
 			}
 		}
 		/* URL is not null terminated, correct that */
-		this->data = chunk_cat("mc", this->data, chunk_from_chars(0));
+		chunk_t chunk1 = this->data;
+		chunk_t chunk2 = chunk_from_chars(0);
+		this->data = chunk_cat_safe("mc", &chunk1, &chunk2);
 	}
 	return SUCCESS;
 }
@@ -365,7 +367,10 @@ cert_payload_t *cert_payload_create_from_hash_and_url(chunk_t hash, char *url)
 
 	this = (private_cert_payload_t*)cert_payload_create(PLV2_CERTIFICATE);
 	this->encoding = ENC_X509_HASH_AND_URL;
-	this->data = chunk_cat("cc", hash, chunk_create(url, strlen(url)));
+
+	chunk_t chunk1 = hash;
+	chunk_t chunk2 = chunk_create(url, strlen(url));
+	this->data = chunk_cat_safe("cc", &chunk1, &chunk2);
 	this->payload_length = get_header_length(this) + this->data.len;
 
 	return &this->public;

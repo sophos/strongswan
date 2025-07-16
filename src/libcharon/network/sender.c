@@ -127,7 +127,8 @@ METHOD(sender_t, send_, void,
 	{
 		chunk_t data, marker = chunk_from_chars(0x00, 0x00, 0x00, 0x00);
 
-		data = chunk_cat("cc", marker, packet->get_data(packet));
+		chunk_t chunk1 = packet->get_data(packet);
+		data = chunk_cat_safe("cc", &marker, &chunk1);
 		packet->set_data(packet, data);
 	}
 

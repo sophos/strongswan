@@ -241,7 +241,8 @@ bool openssl_bn2chunk(const BIGNUM *bn, chunk_t *chunk)
 	{
 		if (chunk->len && chunk->ptr[0] & 0x80)
 		{	/* if MSB is set, prepend a zero to make it non-negative */
-			*chunk = chunk_cat("cm", chunk_from_chars(0x00), *chunk);
+			chunk_t chunk1 = chunk_from_chars(0x00);
+			*chunk = chunk_cat_safe("cm", &chunk1, chunk);
 		}
 		return TRUE;
 	}

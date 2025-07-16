@@ -773,7 +773,7 @@ static bool generate(private_x509_crl_t *this, certificate_t *cert,
 							asn1_integer("c", serial),
 							asn1_from_time(&date, ASN1_UTCTIME),
 							entry_ext);
-		certList = chunk_cat("mm", certList, revoked);
+		certList = chunk_cat_safe("mm", &certList, &revoked);
 	}
 	enumerator->destroy(enumerator);
 

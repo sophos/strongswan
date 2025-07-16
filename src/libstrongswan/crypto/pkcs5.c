@@ -225,7 +225,9 @@ static bool pbkdf2(private_pkcs5_t *this, chunk_t password, chunk_t key)
 	blocks = (key.len - 1) / block.len + 1;
 	keymat = chunk_alloca(blocks * block.len);
 
-	seed = chunk_cata("cc", this->salt, chunk_from_thing(i));
+	chunk_t chunk1 = this->salt;
+	chunk_t chunk2 = chunk_from_thing(i);
+	seed = chunk_cata_safe("cc", &chunk1, &chunk2);
 
 	for (; i < blocks; i++)
 	{
