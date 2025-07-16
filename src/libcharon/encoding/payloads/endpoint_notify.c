@@ -215,8 +215,8 @@ static chunk_t build_notification_data(private_endpoint_notify_t *this)
 	port_chunk = chunk_from_thing(port);
 
 	/* data = prio | family | type | port | addr */
-	data = chunk_cat("ccccc", prio_chunk, family_chunk, type_chunk,
-					 port_chunk, addr_chunk);
+	data = chunk_cat_safe("ccccc", &prio_chunk, &family_chunk, &type_chunk,
+					 &port_chunk, &addr_chunk);
 	DBG3(DBG_IKE, "me_endpoint_data %B", &data);
 	return data;
 }

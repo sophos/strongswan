@@ -335,9 +335,12 @@ METHOD(id_payload_t, get_encoded, chunk_t,
 	private_id_payload_t *this)
 {
 	uint16_t port = htons(this->port);
-	return chunk_cat("cccc", chunk_from_thing(this->id_type),
-					 chunk_from_thing(this->protocol_id),
-					 chunk_from_thing(port), this->id_data);
+
+	chunk_t chunk1 = chunk_from_thing(this->id_type);
+	chunk_t chunk2 = chunk_from_thing(this->protocol_id);
+	chunk_t chunk3 = chunk_from_thing(port);
+	chunk_t chunk4 = this->id_data;
+	return chunk_cat_safe("cccc", &chunk1, &chunk2, &chunk3, &chunk4);
 }
 
 METHOD2(payload_t, id_payload_t, destroy, void,
@@ -442,8 +445,10 @@ id_payload_t *id_payload_create_from_ts(traffic_selector_t *ts)
 			netmask[byte] = 0xFF;
 			mask -= 8;
 		}
-		this->id_data = chunk_cat("cc", net->get_address(net),
-								  chunk_create(netmask, len));
+
+		chunk_t chunk1 = net->get_address(net);
+		chunk_t chunk2 = chunk_create(netmask, len);
+		this->id_data = chunk_cat_safe("cc", &chunk1, &chunk2);
 		net->destroy(net);
 	}
 	else
@@ -456,8 +461,10 @@ id_payload_t *id_payload_create_from_ts(traffic_selector_t *ts)
 		{
 			this->id_type = ID_IPV6_ADDR_RANGE;
 		}
-		this->id_data = chunk_cat("cc",
-							ts->get_from_address(ts), ts->get_to_address(ts));
+
+		chunk_t chunk1 = ts->get_from_address(ts);
+		chunk_t chunk2 = ts->get_to_address(ts);
+		this->id_data = chunk_cat_safe("cc", &chunk1, &chunk2);
 		net->destroy(net);
 	}
 	this->port = ts->get_from_port(ts);

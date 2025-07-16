@@ -54,7 +54,7 @@ chunk_t chunk_create_clone(u_char *ptr, chunk_t chunk)
 /**
  * Described in header.
  */
-size_t chunk_length(const char* mode, ...)
+size_t chunk_length_safe(const char* mode, ...)
 {
 	va_list chunks;
 	size_t length = 0;
@@ -68,8 +68,8 @@ size_t chunk_length(const char* mode, ...)
 			case 'c':
 			case 's':
 			{
-				chunk_t ch = va_arg(chunks, chunk_t);
-				length += ch.len;
+				chunk_t* ch = va_arg(chunks, chunk_t*);
+				length += ch->len;
 				continue;
 			}
 			default:
@@ -84,7 +84,7 @@ size_t chunk_length(const char* mode, ...)
 /**
  * Described in header.
  */
-chunk_t chunk_create_cat(u_char *ptr, const char* mode, ...)
+chunk_t chunk_create_cat_safe(u_char *ptr, const char* mode, ...)
 {
 	va_list chunks;
 	chunk_t construct = chunk_create(ptr, 0);
@@ -93,7 +93,7 @@ chunk_t chunk_create_cat(u_char *ptr, const char* mode, ...)
 	while (TRUE)
 	{
 		bool free_chunk = FALSE, clear_chunk = FALSE;
-		chunk_t ch;
+		chunk_t* ch;
 
 		switch (*mode++)
 		{
@@ -104,17 +104,17 @@ chunk_t chunk_create_cat(u_char *ptr, const char* mode, ...)
 				free_chunk = TRUE;
 				/* FALL */
 			case 'c':
-				ch = va_arg(chunks, chunk_t);
-				memcpy(ptr, ch.ptr, ch.len);
-				ptr += ch.len;
-				construct.len += ch.len;
+				ch = va_arg(chunks, chunk_t*);
+				memcpy(ptr, ch->ptr, ch->len);
+				ptr += ch->len;
+				construct.len += ch->len;
 				if (clear_chunk)
 				{
-					chunk_clear(&ch);
+					chunk_clear(ch);
 				}
 				else if (free_chunk)
 				{
-					free(ch.ptr);
+					free(ch->ptr);
 				}
 				continue;
 			default:

@@ -359,7 +359,7 @@ METHOD(keymat_v1_t, derive_ike_keys, bool,
 
 	*((uint64_t*)spi_i.ptr) = id->get_initiator_spi(id);
 	*((uint64_t*)spi_r.ptr) = id->get_responder_spi(id);
-	nonces = chunk_cata("cc", nonce_i, nonce_r);
+	nonces = chunk_cata_safe("cc", &nonce_i, &nonce_r);
 
 	switch (auth)
 	{
@@ -410,7 +410,7 @@ METHOD(keymat_v1_t, derive_ike_keys, bool,
 	DBG4(DBG_IKE, "SKEYID %B", &skeyid);
 
 	/* SKEYID_d = prf(SKEYID, g^xy | CKY-I | CKY-R | 0) */
-	data = chunk_cat("cccc", g_xy, spi_i, spi_r, octet_0);
+	data = chunk_cat_safe("cccc", &g_xy, &spi_i, &spi_r, &octet_0);
 	if (!this->prf->set_key(this->prf, skeyid) ||
 		!this->prf->allocate_bytes(this->prf, data, &this->skeyid_d))
 	{
@@ -423,7 +423,8 @@ METHOD(keymat_v1_t, derive_ike_keys, bool,
 	DBG4(DBG_IKE, "SKEYID_d %B", &this->skeyid_d);
 
 	/* SKEYID_a = prf(SKEYID, SKEYID_d | g^xy | CKY-I | CKY-R | 1) */
-	data = chunk_cat("ccccc", this->skeyid_d, g_xy, spi_i, spi_r, octet_1);
+	chunk_t chunk1 = this->skeyid_d;
+	data = chunk_cat_safe("ccccc", &chunk1, &g_xy, &spi_i, &spi_r, &octet_1);
 	if (!this->prf->allocate_bytes(this->prf, data, &this->skeyid_a))
 	{
 		chunk_clear(&g_xy);
@@ -435,7 +436,8 @@ METHOD(keymat_v1_t, derive_ike_keys, bool,
 	DBG4(DBG_IKE, "SKEYID_a %B", &this->skeyid_a);
 
 	/* SKEYID_e = prf(SKEYID, SKEYID_a | g^xy | CKY-I | CKY-R | 2) */
-	data = chunk_cat("ccccc", this->skeyid_a, g_xy, spi_i, spi_r, octet_2);
+	chunk_t chunk2 = this->skeyid_a;
+	data = chunk_cat_safe("ccccc", &chunk2, &g_xy, &spi_i, &spi_r, &octet_2);
 	if (!this->prf->allocate_bytes(this->prf, data, &skeyid_e))
 	{
 		chunk_clear(&g_xy);
@@ -501,7 +503,7 @@ METHOD(keymat_v1_t, derive_ike_keys, bool,
 	g_xr = this->initiator ? dh_other : dh_me;
 
 	/* initial IV = hash(g^xi | g^xr) */
-	data = chunk_cata("cc", g_xi, g_xr);
+	data = chunk_cata_safe("cc", &g_xi, &g_xr);
 	chunk_free(&dh_me);
 	return this->iv_manager->init_iv_chain(this->iv_manager, data, this->hasher,
 										this->aead->get_block_size(this->aead));
@@ -625,16 +627,20 @@ METHOD(keymat_v1_t, derive_child_keys, bool,
 	}
 
 	*encr_r = *integ_r = *encr_i = *integ_i = chunk_empty;
-	seed = chunk_cata("ccccc", secret, chunk_from_thing(protocol),
-					  chunk_from_thing(spi_r), nonce_i, nonce_r);
+
+	chunk_t chunk1 = chunk_from_thing(protocol);
+	chunk_t chunk2 = chunk_from_thing(spi_r);
+	seed = chunk_cata_safe("ccccc", &secret, &chunk1, &chunk2, &nonce_i, &nonce_r);
+
 	DBG4(DBG_CHD, "initiator SA seed %B", &seed);
 	if (!derive_child_keymat(this, seed, enc_size, encr_i, int_size, integ_i))
 	{
 		goto failure;
 	}
 
-	seed = chunk_cata("ccccc", secret, chunk_from_thing(protocol),
-					  chunk_from_thing(spi_i), nonce_i, nonce_r);
+	chunk_t chunk3 = chunk_from_thing(protocol), chunk4 = chunk_from_thing(spi_i);
+	seed = chunk_cata_safe("ccccc", &secret, &chunk3, &chunk4, &nonce_i, &nonce_r);
+
 	DBG4(DBG_CHD, "responder SA seed %B", &seed);
 	if (!derive_child_keymat(this, seed, enc_size, encr_r, int_size, integ_r))
 	{
@@ -715,9 +721,10 @@ METHOD(keymat_v1_t, get_hash, bool,
 		spi_other = ike_sa_id->get_initiator_spi(ike_sa_id);
 		spi = ike_sa_id->get_responder_spi(ike_sa_id);
 	}
-	data = chunk_cat("cccccc", dh, dh_other,
-					 chunk_from_thing(spi), chunk_from_thing(spi_other),
-					 sa_i, id);
+
+	chunk_t chunk1 = chunk_from_thing(spi);
+	chunk_t chunk2 = chunk_from_thing(spi_other);
+	data = chunk_cat_safe("cccccc", &dh, &dh_other, &chunk1, &chunk2, &sa_i, &id);
 
 	DBG3(DBG_IKE, "HASH_%c data %B", initiator ? 'I' : 'R', &data);
 
@@ -838,13 +845,15 @@ METHOD(keymat_v1_t, get_hash_phase2, bool,
 				{
 					return FALSE;
 				}
-				data = chunk_cata("cc", chunk_from_thing(mid_n), *n_i);
+				chunk_t chunk1 = chunk_from_thing(mid_n);
+				data = chunk_cata_safe("cc", &chunk1, n_i);
 			}
 			else
 			{	/* Hash(3) = prf(SKEYID_a, 0 | M-ID | Ni_b | Nr_b) */
 				name = "Hash(3)";
-				data = chunk_cata("cccc", octet_0, chunk_from_thing(mid_n),
-								  *n_i, *n_r);
+				chunk_t chunk1 = chunk_from_thing(mid_n);
+				data = chunk_cata_safe("cccc", &octet_0, &chunk1,
+								  n_i, n_r);
 				add_message = FALSE;
 				/* we don't need the state anymore */
 				this->iv_manager->remove_quick_mode(this->iv_manager, mid);

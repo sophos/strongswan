@@ -160,7 +160,8 @@ sec_label_t *sec_label_from_encoding(const chunk_t value)
 	else if (value.ptr[value.len-1])
 	{
 		DBG1(DBG_LIB, "adding null-terminator to security label");
-		cloned = chunk_cat("cc", value, chunk_from_chars(0x00));
+		chunk_t chunk1 = chunk_from_chars(0x00);
+		cloned = chunk_cat_safe("cc", &value, &chunk1);
 	}
 	else
 	{

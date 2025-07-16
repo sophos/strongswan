@@ -61,7 +61,10 @@ METHOD(task_t, build, status_t,
 	ike_sa_id = this->ike_sa->get_id(this->ike_sa);
 	spi_i = ike_sa_id->get_initiator_spi(ike_sa_id);
 	spi_r = ike_sa_id->get_responder_spi(ike_sa_id);
-	spi = chunk_cata("cc", chunk_from_thing(spi_i), chunk_from_thing(spi_r));
+
+	chunk_t chunk1 = chunk_from_thing(spi_i);
+	chunk_t chunk2 = chunk_from_thing(spi_r);
+	spi = chunk_cata_safe("cc", &chunk1, &chunk2);
 
 	notify->set_spi_data(notify, spi);
 	notify->set_notification_data(notify, chunk_from_thing(seqnr));

@@ -68,7 +68,9 @@ chunk_t chunk_create_clone(u_char *ptr, chunk_t chunk);
 /**
  * Calculate length of multiple chunks
  */
-size_t chunk_length(const char *mode, ...);
+#define chunk_length(...) \
+    static_assert(0, "Avoid chunk_length as it was causing stack overflow crash in arm64 windows.  Use chunk_length_safe() instead.")
+size_t chunk_length_safe(const char *mode, ...);
 
 /**
  * Concatenate chunks into a chunk pointing to "ptr".
@@ -77,7 +79,9 @@ size_t chunk_length(const char *mode, ...);
  * them with a single character: 'c' for copy (allocate new chunk), 'm' for move
  * (free given chunk) or 's' for sensitive-move (clear given chunk, then free).
  */
-chunk_t chunk_create_cat(u_char *ptr, const char* mode, ...);
+#define chunk_create_cat(...) \
+    static_assert(0, "Avoid chunk_create_cat as it was causing stack overflow crash in arm64 windows.  Use chunk_create_cat_safe() instead.")
+chunk_t chunk_create_cat_safe(u_char *ptr, const char* mode, ...);
 
 /**
  * Split up a chunk into parts, "mode" is a string of "a" (alloc),
@@ -271,12 +275,16 @@ static inline void chunk_clear(chunk_t *chunk)
 /**
  * Concatenate chunks into a chunk on heap
  */
-#define chunk_cat(mode, ...) chunk_create_cat(malloc(chunk_length(mode, __VA_ARGS__)), mode, __VA_ARGS__)
+#define chunk_cat(...) \
+    static_assert(0, "Avoid chunk_cat as it was causing stack overflow crash in arm64 windows.  Use chunk_cat_safe() instead.")
+#define chunk_cat_safe(mode, ...) chunk_create_cat_safe(malloc(chunk_length_safe(mode, __VA_ARGS__)), mode, __VA_ARGS__)
 
 /**
  * Concatenate chunks into a chunk on stack
  */
-#define chunk_cata(mode, ...) chunk_create_cat(alloca(chunk_length(mode, __VA_ARGS__)), mode, __VA_ARGS__)
+#define chunk_cata(...) \
+    static_assert(0, "Avoid chunk_cata as it was causing stack overflow crash in arm64 windows.  Use chunk_cata_safe() instead.")
+#define chunk_cata_safe(mode, ...) chunk_create_cat_safe(alloca(chunk_length_safe(mode, __VA_ARGS__)), mode, __VA_ARGS__)
 
 /**
  * Skip n bytes in chunk (forward pointer, shorten length)

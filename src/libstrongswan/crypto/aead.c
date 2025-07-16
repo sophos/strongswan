@@ -72,7 +72,7 @@ METHOD(aead_t, encrypt, bool,
 			free(encr.ptr);
 			return FALSE;
 		}
-		*encrypted = chunk_cat("cmm", iv, encr, sig);
+		*encrypted = chunk_cat_safe("cmm", &iv, &encr, &sig);
 	}
 	else
 	{
