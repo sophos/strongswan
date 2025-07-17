@@ -472,7 +472,7 @@ static chunk_t build_responses(private_x509_ocsp_response_t *this)
 	while (enumerator->enumerate(enumerator, &response))
 	{
 		single_response = build_singleResponse(this, response);
-		responses = chunk_cata_safe("mm", &responses, &single_response);
+		responses = chunk_cat_safe("mm", &responses, &single_response);
 	}
 	enumerator->destroy(enumerator);
 
