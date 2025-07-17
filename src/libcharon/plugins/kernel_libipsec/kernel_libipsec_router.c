@@ -234,7 +234,7 @@ static char* format_error(DWORD error)
 				  NULL,
 				  error,
 				  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				  &lpMsgBuf,
+				  (LPSTR)&lpMsgBuf,
 				  0,
 				  NULL);
 	if ( dwChars > 2 && lpMsgBuf != NULL )
@@ -300,7 +300,7 @@ static job_requeue_t handle_plain(private_kernel_libipsec_router_t *this)
 	void **key = NULL;
 	bool oldstate;
 	uint32_t length, event_status = 0, i = 0, j = 0, offset;
-	handle_overlapped_buffer_t *bundle_array = NULL, dummy, tun_device_handle_overlapped_buffer;
+	handle_overlapped_buffer_t *bundle_array = NULL, dummy = {0}, tun_device_handle_overlapped_buffer;
 	OVERLAPPED *overlapped = NULL;
 	HANDLE *event_array = NULL, tun_device_event;
 	tun_device_t *tun_device = this->tun.tun;

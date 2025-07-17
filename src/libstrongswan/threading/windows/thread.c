@@ -632,7 +632,7 @@ void thread_exit(void *val)
 /**
  * Clean up thread data while it detaches
  */
-static void cleanup_tls()
+__attribute__((unused)) static void cleanup_tls()
 {
 	private_thread_t *this;
 	bool old;
