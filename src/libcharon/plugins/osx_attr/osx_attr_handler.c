@@ -1,9 +1,10 @@
 /*
  * Copyright (C) 2013 Martin Willi
- * Copyright (C) 2013 revosec AG
- * Copyright (C) 2019 Sophos Inc
+ *
  * Copyright (C) secunet Security Networks AG
-
+ *
+ * Copyright (C) 2019-25 Sophos Inc
+ *
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
