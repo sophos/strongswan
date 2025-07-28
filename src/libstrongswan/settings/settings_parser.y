@@ -1,7 +1,8 @@
 %{
 /*
  * Copyright (C) 2014-2018 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -192,6 +193,8 @@ value:
 		}
 		free($1);
 		free($2);
+		/* suppress compiler warning */
+		(void)yynerrs;
 	}
 	;
 

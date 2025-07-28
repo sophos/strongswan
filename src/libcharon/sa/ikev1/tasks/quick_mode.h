@@ -1,9 +1,8 @@
 /*
  * Copyright (C) 2015-2019 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
- *
  * Copyright (C) 2011 Martin Willi
- * Copyright (C) 2011 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -50,6 +49,10 @@ struct quick_mode_t {
 
 	/**
 	 * Use a specific reqid to install this CHILD_SA.
+	 *
+	 * This must only be called with dynamically allocated reqids (i.e. from
+	 * kernel_interface_t::alloc_reqid()), the method takes a reference that's
+	 * maintained for the lifetime of the task.
 	 *
 	 * @param reqid			reqid to use
 	 */

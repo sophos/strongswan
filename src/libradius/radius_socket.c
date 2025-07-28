@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Martin Willi
- * Copyright (C) 2010 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -371,7 +372,7 @@ METHOD(radius_socket_t, destroy, void,
 	if (this->auth_fd != -1)
 	{
 		close(this->auth_fd);
-	};
+	}
 	if (this->acct_fd != -1)
 	{
 		close(this->acct_fd);

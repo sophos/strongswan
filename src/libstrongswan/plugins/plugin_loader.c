@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2010-2014 Tobias Brunner
  * Copyright (C) 2007 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -357,19 +358,12 @@ void plugin_constructor_register(char *name, void *constructor)
  *          FAILED, if the plugin could not be constructed
  */
 static status_t create_plugin(private_plugin_loader_t *this, void *handle,
-							  char *name, bool integrity, bool critical,
-							  plugin_entry_t **entry)
+							  char *name, char *create, bool integrity,
+							  bool critical, plugin_entry_t **entry)
 {
-	char create[128];
 	plugin_t *plugin;
 	plugin_constructor_t constructor = NULL;
 
-	if (snprintf(create, sizeof(create), "%s_plugin_create",
-				 name) >= sizeof(create))
-	{
-		return FAILED;
-	}
-	translate(create, "-", "_");
 #ifdef STATIC_PLUGIN_CONSTRUCTORS
 	if (plugin_constructors)
 	{
@@ -416,11 +410,19 @@ static status_t create_plugin(private_plugin_loader_t *this, void *handle,
 static plugin_entry_t *load_plugin(private_plugin_loader_t *this, char *name,
 								   char *file, bool critical)
 {
+	char create[128];
 	plugin_entry_t *entry;
 	void *handle;
 	int flag = RTLD_LAZY;
 
-	switch (create_plugin(this, RTLD_DEFAULT, name, FALSE, critical, &entry))
+	if (snprintf(create, sizeof(create), "%s_plugin_create",
+				 name) >= sizeof(create))
+	{
+		return NULL;
+	}
+	translate(create, "-", "_");
+	switch (create_plugin(this, RTLD_DEFAULT, name, create, FALSE, critical,
+						  &entry))
 	{
 		case SUCCESS:
 			this->plugins->insert_last(this->plugins, entry);
@@ -430,6 +432,8 @@ static plugin_entry_t *load_plugin(private_plugin_loader_t *this, char *name,
 			{	/* try to load the plugin from a file */
 				break;
 			}
+			DBG1(DBG_LIB, "plugin '%s': failed to load - %s not found and no "
+				 "plugin file available", name, create);
 			/* fall-through */
 		default:
 			return NULL;
@@ -461,10 +465,17 @@ static plugin_entry_t *load_plugin(private_plugin_loader_t *this, char *name,
 		DBG1(DBG_LIB, "plugin '%s' failed to load: %s", name, dlerror());
 		return NULL;
 	}
-	if (create_plugin(this, handle, name, TRUE, critical, &entry) != SUCCESS)
+	switch (create_plugin(this, handle, name, create, TRUE, critical, &entry))
 	{
-		dlclose(handle);
-		return NULL;
+		case SUCCESS:
+			break;
+		case NOT_FOUND:
+			DBG1(DBG_LIB, "plugin '%s': failed to load - %s not found", name,
+				 create);
+			/* fall-through */
+		default:
+			dlclose(handle);
+			return NULL;
 	}
 	entry->handle = handle;
 	this->plugins->insert_last(this->plugins, entry);
@@ -744,10 +755,11 @@ static bool load_dependencies(private_plugin_loader_t *this,
 		{
 			bool soft = provided->feature[i].kind == FEATURE_SDEPEND;
 
-#ifndef USE_FUZZING
+#if !defined(USE_FUZZING) && DEBUG_LEVEL >= 1
 			char *name, *provide, *depend;
+#if DEBUG_LEVEL >= 3
 			int indent = level * 2;
-
+#endif
 			name = provided->entry->plugin->get_name(provided->entry->plugin);
 			provide = plugin_feature_get_string(&provided->feature[0]);
 			depend = plugin_feature_get_string(&provided->feature[i]);
@@ -768,7 +780,7 @@ static bool load_dependencies(private_plugin_loader_t *this,
 			}
 			free(provide);
 			free(depend);
-#endif /* !USE_FUZZING */
+#endif /* !USE_FUZZING && DEBUG_LEVEL */
 
 			if (soft)
 			{	/* it's ok if we can't resolve soft dependencies */
@@ -798,7 +810,7 @@ static void load_feature(private_plugin_loader_t *this,
 			return;
 		}
 
-#ifndef USE_FUZZING
+#if !defined(USE_FUZZING) && DEBUG_LEVEL >= 1
 		char *name, *provide;
 
 		name = provided->entry->plugin->get_name(provided->entry->plugin);
@@ -814,7 +826,7 @@ static void load_feature(private_plugin_loader_t *this,
 				 provide, name);
 		}
 		free(provide);
-#endif /* !USE_FUZZING */
+#endif /* !USE_FUZZING && DEBUG_LEVEL */
 	}
 	else
 	{	/* TODO: we could check the current level and set a different flag when
@@ -834,13 +846,12 @@ static void load_provided(private_plugin_loader_t *this,
 						  provided_feature_t *provided,
 						  int level)
 {
-
 	if (provided->loaded || provided->failed)
 	{
 		return;
 	}
 
-#ifndef USE_FUZZING
+#if !defined(USE_FUZZING) && DEBUG_LEVEL >= 3
 	char *name, *provide;
 	int indent = level * 2;
 
@@ -861,7 +872,7 @@ static void load_provided(private_plugin_loader_t *this,
 	{
 		return;
 	}
-#endif /* USE_FUZZING */
+#endif /* USE_FUZZING && DEBUG_LEVEL */
 
 	provided->loading = TRUE;
 	load_feature(this, provided, level + 1);

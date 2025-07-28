@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2017 Andreas Steffen
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -104,9 +105,9 @@ struct imv_swima_state_t {
 	json_object* (*get_jrequest)(imv_swima_state_t *this);
 
 	/**
-	 * Set the number of still missing SW [ID] records or envents
+	 * Set the number of still missing SW [ID] records or events
 	 *
-	 * @param count				Number of missing SW [ID] records or envents
+	 * @param count				Number of missing SW [ID] records or events
 	 */
 	void (*set_missing)(imv_swima_state_t *this, uint32_t count);
 

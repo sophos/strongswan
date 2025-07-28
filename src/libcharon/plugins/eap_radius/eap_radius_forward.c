@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2012 Martin Willi
- * Copyright (C) 2012 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -219,7 +220,7 @@ static void radius2queue(radius_message_t *message, linked_list_t *queue,
 }
 
 /**
- * Copy RADIUS attribute nofifies from IKE message to queue
+ * Copy RADIUS attribute notifies from IKE message to queue
  */
 static void ike2queue(message_t *message, linked_list_t *queue,
 					  linked_list_t *selector)

@@ -102,6 +102,7 @@ sa/ikev2/tasks/ike_cert_post.c sa/ikev2/tasks/ike_cert_post.h \
 sa/ikev2/tasks/ike_config.c sa/ikev2/tasks/ike_config.h \
 sa/ikev2/tasks/ike_delete.c sa/ikev2/tasks/ike_delete.h \
 sa/ikev2/tasks/ike_dpd.c sa/ikev2/tasks/ike_dpd.h \
+sa/ikev2/tasks/ike_establish.c sa/ikev2/tasks/ike_establish.h \
 sa/ikev2/tasks/ike_init.c sa/ikev2/tasks/ike_init.h \
 sa/ikev2/tasks/ike_natd.c sa/ikev2/tasks/ike_natd.h \
 sa/ikev2/tasks/ike_mid_sync.c sa/ikev2/tasks/ike_mid_sync.h \
@@ -144,6 +145,11 @@ endif
 if USE_SYSLOG
   libcharon_la_SOURCES += \
     bus/listeners/sys_logger.c bus/listeners/sys_logger.h
+endif
+
+if USE_PF_HANDLER
+  libcharon_la_SOURCES += \
+    network/pf_handler.c network/pf_handler.h
 endif
 
 daemon.lo :		$(top_builddir)/config.status
@@ -569,13 +575,6 @@ if USE_KERNEL_PFROUTE
   SUBDIRS += plugins/kernel_pfroute
 if MONOLITHIC
   libcharon_la_LIBADD += plugins/kernel_pfroute/libstrongswan-kernel-pfroute.la
-endif
-endif
-
-if USE_KERNEL_SYSCFG
-  SUBDIRS += plugins/kernel_syscfg
-if MONOLITHIC
-  libcharon_la_LIBADD += plugins/kernel_syscfg/libstrongswan-kernel-syscfg.la
 endif
 endif
 

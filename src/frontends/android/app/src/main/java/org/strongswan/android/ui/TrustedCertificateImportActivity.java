@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2014 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,13 +16,11 @@
 
 package org.strongswan.android.ui;
 
-import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -60,7 +59,6 @@ public class TrustedCertificateImportActivity extends AppCompatActivity
 		}
 	);
 
-	@TargetApi(Build.VERSION_CODES.KITKAT)
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -77,7 +75,7 @@ public class TrustedCertificateImportActivity extends AppCompatActivity
 		{
 			importCertificate(intent.getData());
 		}
-		else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+		else
 		{
 			Intent openIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
 			openIntent.setType("*/*");
@@ -88,7 +86,6 @@ public class TrustedCertificateImportActivity extends AppCompatActivity
 			catch (ActivityNotFoundException e)
 			{	/* some devices are unable to browse for files */
 				finish();
-				return;
 			}
 		}
 	}

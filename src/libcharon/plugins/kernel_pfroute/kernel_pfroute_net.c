@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009-2016 Tobias Brunner
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -57,10 +58,6 @@
 
 /** delay before reinstalling routes (ms) */
 #define ROUTE_DELAY 100
-
-/** Hack to work around issue where new VIP is sent but not used
-    REMOVE WHEN FIXED */
-#define IGNORE_VIP_CHANGES  1
 
 /** default MTU for TUN devices */
 #define TUN_DEFAULT_MTU 1400
@@ -307,64 +304,6 @@ static bool net_change_equals(net_change_t *a, net_change_t *b)
 
 typedef struct private_kernel_pfroute_net_t private_kernel_pfroute_net_t;
 
-typedef struct tun_entry_t tun_entry_t;
-
-/**
- * Entry in the tun linked list
- */
-struct tun_entry_t {
-
-	/** The tun device */
-	tun_device_t *tun;
-
-	/** A reference count for the TUN device */
-	int count;
-};
-
-/**
- * destroy a tun_entry_t object
- */
-static void tun_entry_destroy(tun_entry_t *this)
-{
-	this->tun->destroy(this->tun);
-	free(this);
-}
-
-/**
- * find a tun_entry_t object that has a given IP address
- */
-static tun_entry_t *tun_entry_find(linked_list_t *tuns, host_t *ip)
-{
-	tun_entry_t *entry = NULL;
-	enumerator_t *enumerator;
-	host_t *addr;
-	char *name;
-	bool found = FALSE;
-
-	enumerator = tuns->create_enumerator(tuns);
-	while (enumerator->enumerate(enumerator, &entry))
-	{
-		name = entry->tun->get_name(entry->tun);
-		addr = entry->tun->get_address(entry->tun, NULL);
-		if (addr)
-		{
-			DBG2(DBG_KNL, "checking for %s:%H", name, addr);
-			if (addr->ip_equals(addr, ip) || IGNORE_VIP_CHANGES)
-			{
-				DBG2(DBG_KNL, "%s:%H matches", name, addr);
-				found = TRUE;
-				break;
-			}
-		}
-		else
-		{
-			DBG1(DBG_KNL, "%s has no associated address", name);
-		}
-	}
-	enumerator->destroy(enumerator);
-	return found ? entry : NULL;
-}
-
 /**
  * Private variables and functions of kernel_pfroute class.
  */
@@ -391,7 +330,7 @@ struct private_kernel_pfroute_net_t
 	hashlist_t *addrs;
 
 	/**
-	 * List of tun devices we installed for virtual IPs (tun_entry_t)
+	 * List of tun devices we installed for virtual IPs
 	 */
 	linked_list_t *tuns;
 
@@ -842,33 +781,45 @@ static void process_addr(private_kernel_pfroute_net_t *this,
 }
 
 /**
+ * Check if the address is already known so we can keep it as-is with the
+ * virtual flag.  Destroys the given host_t object if it is found.
+ */
+static bool existing_addr_entry(iface_entry_t *iface, linked_list_t *addrs,
+								host_t *ip)
+{
+	enumerator_t *enumerator;
+	addr_entry_t *addr;
+	bool found = FALSE;
+
+	enumerator = addrs->create_enumerator(addrs);
+	while (enumerator->enumerate(enumerator, &addr))
+	{
+		if (ip->ip_equals(ip, addr->ip))
+		{
+			ip->destroy(ip);
+			addrs->remove_at(addrs, enumerator);
+			iface->addrs->insert_last(iface->addrs, addr);
+			found = TRUE;
+			break;
+		}
+	}
+	enumerator->destroy(enumerator);
+	return found;
+}
+
+/**
  * Re-initialize address list of an interface if it changes state
  */
 static void repopulate_iface(private_kernel_pfroute_net_t *this,
 							 iface_entry_t *iface)
 {
+	linked_list_t *addrs;
 	struct ifaddrs *ifap, *ifa;
-	addr_entry_t *addr, *vaddr = NULL;
+	addr_entry_t *addr;
+	host_t *ip;
 
-	while (iface->addrs->remove_last(iface->addrs, (void**)&addr) == SUCCESS)
-	{
-		addr_map_entry_remove(addr, iface, this);
-		/* Check for the virtual IP address. If we see it, we will save it so we
-		   can set it later when the address list is rebuilt. Note that we only
-		   save one, so the last virtual address is the one we will use. */
-		if (addr->virtual)
-		{
-			if (vaddr)
-			{
-				addr_entry_destroy(vaddr);
-			}
-			vaddr = addr;
-		}
-		else
-		{
-			addr_entry_destroy(addr);
-		}
-	}
+	addrs = iface->addrs;
+	iface->addrs = linked_list_create();
 
 	if (getifaddrs(&ifap) == 0)
 	{
@@ -880,15 +831,15 @@ static void repopulate_iface(private_kernel_pfroute_net_t *this,
 				{
 					case AF_INET:
 					case AF_INET6:
-						INIT(addr,
-							.ip = host_create_from_sockaddr(ifa->ifa_addr),
-						);
-						if (vaddr && addr->ip->ip_equals(addr->ip, vaddr->ip))
+						ip = host_create_from_sockaddr(ifa->ifa_addr);
+						if (!existing_addr_entry(iface, addrs, ip))
 						{
-							addr->virtual = TRUE;
+							INIT(addr,
+								.ip = ip,
+							);
+							iface->addrs->insert_last(iface->addrs, addr);
+							addr_map_entry_add(this, addr, iface);
 						}
-						iface->addrs->insert_last(iface->addrs, addr);
-						addr_map_entry_add(this, addr, iface);
 						break;
 					default:
 						break;
@@ -897,10 +848,13 @@ static void repopulate_iface(private_kernel_pfroute_net_t *this,
 		}
 		freeifaddrs(ifap);
 	}
-	if (vaddr)
+
+	while (addrs->remove_last(addrs, (void**)&addr) == SUCCESS)
 	{
-		addr_entry_destroy(vaddr);
+		addr_map_entry_remove(addr, iface, this);
+		addr_entry_destroy(addr);
 	}
+	addrs->destroy(addrs);
 }
 
 /**
@@ -1310,37 +1264,16 @@ METHOD(kernel_net_t, add_ip, status_t,
 	enumerator_t *ifaces, *addrs;
 	iface_entry_t *iface;
 	addr_entry_t *addr;
-	tun_device_t *tun_dev;
-	bool timeout = FALSE, found = FALSE;
-	tun_entry_t *tun = NULL;
+	tun_device_t *tun;
+	bool timeout = FALSE;
 
 	if (!this->install_virtual_ip)
 	{	/* disabled by config */
 		return SUCCESS;
 	}
 
-	DBG2(DBG_KNL, "adding virtual IP %H", vip);
-
-	/* If we already have a TUN adapter with this virtual IP we want to continue
-	 * using it. So just increase the reference count and return success. */
-	this->lock->write_lock(this->lock);
-	tun = tun_entry_find(this->tuns, vip);
-	if (tun)
-	{
-		found = TRUE;
-		tun->count++;
-		DBG2(DBG_KNL, "%s:%H found, count = %d", tun->tun->get_name(tun->tun), vip, tun->count);
-	}
-	this->lock->unlock(this->lock);
-	if (found)
-	{
-		return SUCCESS;
-	}
-
-	/* We don't yet have a TUN device with this virtual IP, so create one and
-	 * add it to our list. */
-	tun_dev = tun_device_create(NULL);
-	if (!tun_dev)
+	tun = tun_device_create(NULL);
+	if (!tun)
 	{
 		return FAILED;
 	}
@@ -1354,7 +1287,7 @@ METHOD(kernel_net_t, add_ip, status_t,
 		tun->destroy(tun);
 		return FAILED;
 	}
-	
+
 	/* wait until address appears */
 	this->mutex->lock(this->mutex);
 	while (!timeout && !get_interface_name(this, vip, NULL))
@@ -1366,15 +1299,10 @@ METHOD(kernel_net_t, add_ip, status_t,
 	if (timeout)
 	{
 		DBG1(DBG_KNL, "virtual IP %H did not appear on %s",
-			 vip, tun_dev->get_name(tun_dev));
-		tun_dev->destroy(tun_dev);
+			 vip, tun->get_name(tun));
+		tun->destroy(tun);
 		return FAILED;
 	}
-
-	INIT(tun,
-		 .tun = tun_dev,
-		 .count = 1,
-	);
 
 	this->lock->write_lock(this->lock);
 	this->tuns->insert_last(this->tuns, tun);
@@ -1382,7 +1310,7 @@ METHOD(kernel_net_t, add_ip, status_t,
 	ifaces = this->ifaces->create_enumerator(this->ifaces);
 	while (ifaces->enumerate(ifaces, &iface))
 	{
-		if (streq(iface->ifname, tun_dev->get_name(tun_dev)))
+		if (streq(iface->ifname, tun->get_name(tun)))
 		{
 			addrs = iface->addrs->create_enumerator(iface->addrs);
 			while (addrs->enumerate(addrs, &addr))
@@ -1404,7 +1332,7 @@ METHOD(kernel_net_t, add_ip, status_t,
 	/* lets do this while holding the lock, thus preventing another thread
 	 * from deleting the TUN device concurrently, hopefully listeners are quick
 	 * and cause no deadlocks */
-	charon->kernel->tun(charon->kernel, tun_dev, TRUE);
+	charon->kernel->tun(charon->kernel, tun, TRUE);
 	this->lock->unlock(this->lock);
 
 	return SUCCESS;
@@ -1414,46 +1342,37 @@ METHOD(kernel_net_t, del_ip, status_t,
 	private_kernel_pfroute_net_t *this, host_t *vip, int prefix,
 	bool wait)
 {
-	tun_entry_t *tun;
-	bool timeout = FALSE, found = FALSE, alive = FALSE;
+	enumerator_t *enumerator;
+	tun_device_t *tun;
+	host_t *addr;
+	bool timeout = FALSE, found = FALSE;
 
 	if (!this->install_virtual_ip)
 	{	/* disabled by config */
 		return SUCCESS;
 	}
 
-	DBG2(DBG_KNL, "deleting virtual IP %H", vip);
-
 	this->lock->write_lock(this->lock);
-	tun = tun_entry_find(this->tuns, vip);
-	if (tun)
+	enumerator = this->tuns->create_enumerator(this->tuns);
+	while (enumerator->enumerate(enumerator, &tun))
 	{
-		tun->count--;
-		if (tun->count > 0)
+		addr = tun->get_address(tun, NULL);
+		if (addr && addr->ip_equals(addr, vip))
 		{
-			DBG2(DBG_KNL, "%s:%H not destroyed, count = %d", tun->tun->get_name(tun->tun), vip, tun->count);
-			alive = TRUE;
+			this->tuns->remove_at(this->tuns, enumerator);
+			charon->kernel->tun(charon->kernel, tun, FALSE);
+			tun->destroy(tun);
+			found = TRUE;
+			break;
 		}
-		else
-		{
-			DBG2(DBG_KNL, "destroying %s:%H", tun->tun->get_name(tun->tun), vip);
-			this->tuns->remove(this->tuns, tun, NULL);
-			charon->kernel->tun(charon->kernel, tun->tun, FALSE);
-			tun_entry_destroy(tun);
-		}
-		found = TRUE;
 	}
+	enumerator->destroy(enumerator);
 	this->lock->unlock(this->lock);
 
 	if (!found)
 	{
 		return NOT_FOUND;
 	}
-	else if (alive)
-	{
-		return SUCCESS;
-	}
-
 	/* wait until address disappears */
 	if (wait)
 	{
@@ -2130,6 +2049,11 @@ static status_t init_address_list(private_kernel_pfroute_net_t *this)
 			}
 			addrs->destroy(addrs);
 		}
+		else
+		{
+			DBG3(DBG_KNL, "  %s (ignored, %s)", iface->ifname,
+				 iface->usable ? "down" : "configuration");
+		}
 	}
 	ifaces->destroy(ifaces);
 
@@ -2232,21 +2156,9 @@ kernel_pfroute_net_t *kernel_pfroute_net_create()
 		destroy(this);
 		return NULL;
 	}
+	lib->watcher->add(lib->watcher, this->socket, WATCHER_READ,
+					  (watcher_cb_t)receive_events, this);
 
-	if (streq(lib->ns, "starter"))
-	{
-		/* starter has no threads, so we do not register for kernel events */
-		if (shutdown(this->socket, SHUT_RD) != 0)
-		{
-			DBG1(DBG_KNL, "closing read end of PF_ROUTE socket failed: %s",
-				 strerror(errno));
-		}
-	}
-	else
-	{
-		lib->watcher->add(lib->watcher, this->socket, WATCHER_READ,
-						  (watcher_cb_t)receive_events, this);
-	}
 	if (init_address_list(this) != SUCCESS)
 	{
 		DBG1(DBG_KNL, "unable to get interface list");

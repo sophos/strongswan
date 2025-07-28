@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2013 Martin Willi
- * Copyright (C) 2013 revosec AG
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -80,7 +81,7 @@ static void print_version()
 	if (GetVersionEx((LPOSVERSIONINFO)&osvie))
 	{
 		DBG1(DBG_DMN, "Starting IKE service %s (strongSwan %s, "
-			 "Windows %s %d.%d.%d (SP %d.%d)", SERVICE_NAME, VERSION,
+			 "Windows %s %d.%d.%d (SP %d.%d))", SERVICE_NAME, VERSION,
 			 osvie.wProductType == VER_NT_WORKSTATION ? "Client" : "Server",
 			 osvie.dwMajorVersion, osvie.dwMinorVersion, osvie.dwBuildNumber,
 			 osvie.wServicePackMajor, osvie.wServicePackMinor);

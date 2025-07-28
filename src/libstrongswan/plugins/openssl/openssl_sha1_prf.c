@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -57,12 +58,19 @@ METHOD(prf_t, get_bytes, bool,
 	if (bytes)
 	{
 		uint32_t *hash = (uint32_t*)bytes;
-
+#ifndef OPENSSL_IS_AWSLC
 		hash[0] = htonl(this->ctx.h0);
 		hash[1] = htonl(this->ctx.h1);
 		hash[2] = htonl(this->ctx.h2);
 		hash[3] = htonl(this->ctx.h3);
 		hash[4] = htonl(this->ctx.h4);
+#else
+		hash[0] = htonl(this->ctx.h[0]);
+		hash[1] = htonl(this->ctx.h[1]);
+		hash[2] = htonl(this->ctx.h[2]);
+		hash[3] = htonl(this->ctx.h[3]);
+		hash[4] = htonl(this->ctx.h[4]);
+#endif
 	}
 
 	return TRUE;
@@ -103,6 +111,7 @@ METHOD(prf_t, set_key, bool,
 	{
 		return FALSE;
 	}
+#ifndef OPENSSL_IS_AWSLC
 	if (key.len >= 4)
 	{
 		this->ctx.h0 ^= untoh32(key.ptr);
@@ -123,6 +132,28 @@ METHOD(prf_t, set_key, bool,
 	{
 		this->ctx.h4 ^= untoh32(key.ptr + 16);
 	}
+#else
+	if (key.len >= 4)
+	{
+		this->ctx.h[0] ^= untoh32(key.ptr);
+	}
+	if (key.len >= 8)
+	{
+		this->ctx.h[1] ^= untoh32(key.ptr + 4);
+	}
+	if (key.len >= 12)
+	{
+		this->ctx.h[2] ^= untoh32(key.ptr + 8);
+	}
+	if (key.len >= 16)
+	{
+		this->ctx.h[3] ^= untoh32(key.ptr + 12);
+	}
+	if (key.len >= 20)
+	{
+		this->ctx.h[4] ^= untoh32(key.ptr + 16);
+	}
+#endif
 	return TRUE;
 }
 

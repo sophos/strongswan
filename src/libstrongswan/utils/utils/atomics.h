@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2008-2014 Tobias Brunner
  * Copyright (C) 2008 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -122,6 +123,33 @@ bool cas_bool(bool *ptr, bool oldval, bool newval);
 bool cas_ptr(void **ptr, void *oldval, void *newval);
 
 #endif /* HAVE_GCC_ATOMIC_OPERATIONS */
+
+/**
+ * Get a new reference, but skip zero on overflow.
+ *
+ * If a reference counter is used to allocate unique identifiers, the
+ * refcount value may overflow if it is never decremented. The 0 identifier
+ * may have special semantics, hence returning can be problematic for some
+ * users.
+ *
+ * This call does an additional ref_get() if ref_get() overflows and returns
+ * zero. This ensures that zero is never returned, in the assumption that it
+ * has special meaning.
+ *
+ * @param ref	pointer to ref counter
+ * @return		new value of ref
+ */
+static inline refcount_t ref_get_nonzero(refcount_t *ref)
+{
+	refcount_t v;
+
+	v = ref_get(ref);
+	if (v == 0)
+	{
+		v = ref_get(ref);
+	}
+	return v;
+}
 
 /**
  * Initialize atomics utility functions

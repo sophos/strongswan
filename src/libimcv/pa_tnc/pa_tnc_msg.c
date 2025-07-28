@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2011-2015 Andreas Steffen
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -127,7 +128,6 @@ METHOD(pa_tnc_msg_t, build, bool,
 	bio_writer_t *writer;
 	enumerator_t *enumerator;
 	pa_tnc_attr_t *attr;
-	enum_name_t *pa_attr_names;
 	pen_type_t type;
 	uint8_t flags;
 	chunk_t value;
@@ -158,21 +158,7 @@ METHOD(pa_tnc_msg_t, build, bool,
 		value = attr->get_value(attr);
 		flags = attr->get_noskip_flag(attr) ? PA_TNC_ATTR_FLAG_NOSKIP :
 											  PA_TNC_ATTR_FLAG_NONE;
-
-		pa_attr_names = imcv_pa_tnc_attributes->get_names(imcv_pa_tnc_attributes,
-														  type.vendor_id);
-		if (pa_attr_names)
-		{
-			DBG2(DBG_TNC, "creating PA-TNC attribute type '%N/%N' "
-						  "0x%06x/0x%08x", pen_names, type.vendor_id,
-						   pa_attr_names, type.type, type.vendor_id, type.type);
-		}
-		else
-		{
-			DBG2(DBG_TNC, "creating PA-TNC attribute type '%N' "
-						  "0x%06x/0x%08x", pen_names, type.vendor_id,
-						   type.vendor_id, type.type);
-		}
+		imcv_list_pa_tnc_attribute_type("creating", type.vendor_id, type.type);
 		DBG3(DBG_TNC, "%B", &value);
 
 		writer->write_uint8 (writer, flags);
@@ -291,13 +277,10 @@ METHOD(pa_tnc_msg_t, process_ietf_std_errors, bool,
 		{
 			ietf_attr_pa_tnc_error_t *error_attr;
 			pen_type_t error_code, *non_fatal_type;
-			chunk_t msg_info;
-			uint32_t offset;
 			bool fatal_current_error = TRUE;
 
 			error_attr = (ietf_attr_pa_tnc_error_t*)attr;
 			error_code = error_attr->get_error_code(error_attr);
-			msg_info = error_attr->get_msg_info(error_attr);
 
 			/* skip errors from non-IETF namespaces and non PA-TNC msg errors */
 			if (error_code.vendor_id != PEN_IETF ||
@@ -305,15 +288,17 @@ METHOD(pa_tnc_msg_t, process_ietf_std_errors, bool,
 			{
 				continue;
 			}
+#if DEBUG_LEVEL >= 1
+			chunk_t msg_info = error_attr->get_msg_info(error_attr);
 			DBG1(DBG_TNC, "received PA-TNC error '%N' concerning message "
 				 "0x%08x/0x%08x", pa_tnc_error_code_names, error_code.type,
 				 untoh32(msg_info.ptr), untoh32(msg_info.ptr + 4));
-
+#endif
 			switch (error_code.type)
 			{
 				case PA_ERROR_INVALID_PARAMETER:
-					offset = error_attr->get_offset(error_attr);
-					DBG1(DBG_TNC, "  occurred at offset of %u bytes", offset);
+					DBG1(DBG_TNC, "  occurred at offset of %u bytes",
+						 error_attr->get_offset(error_attr));
 					break;
 				case PA_ERROR_ATTR_TYPE_NOT_SUPPORTED:
 					unsupported_type =

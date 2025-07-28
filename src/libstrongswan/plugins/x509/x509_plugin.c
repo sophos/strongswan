@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2008-2009 Martin Willi
- * HSR Hochschule fuer Technik Rapperswil
+ * Copyright (C) 2023 Andreas Steffen, strongSec GmbH
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -68,6 +70,10 @@ METHOD(plugin_t, get_features, int,
 			PLUGIN_PROVIDE(CERT_ENCODE, CERT_X509_OCSP_REQUEST),
 				PLUGIN_DEPENDS(HASHER, HASH_SHA1),
 				PLUGIN_DEPENDS(RNG, RNG_WEAK),
+		PLUGIN_REGISTER(CERT_DECODE, x509_ocsp_request_load, TRUE),
+			PLUGIN_PROVIDE(CERT_DECODE, CERT_X509_OCSP_REQUEST),
+		PLUGIN_REGISTER(CERT_ENCODE, x509_ocsp_response_gen, FALSE),
+			PLUGIN_PROVIDE(CERT_ENCODE, CERT_X509_OCSP_RESPONSE),
 		PLUGIN_REGISTER(CERT_DECODE, x509_ocsp_response_load, TRUE),
 			PLUGIN_PROVIDE(CERT_DECODE, CERT_X509_OCSP_RESPONSE),
 

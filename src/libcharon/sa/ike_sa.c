@@ -3,7 +3,8 @@
  * Copyright (C) 2006 Daniel Roethlisberger
  * Copyright (C) 2005-2009 Martin Willi
  * Copyright (C) 2005 Jan Hutter
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -435,11 +436,9 @@ METHOD(ike_sa_t, set_peer_cfg, void,
 	DESTROY_IF(this->peer_cfg);
 	this->peer_cfg = peer_cfg;
 
-	if (!this->ike_cfg)
-	{
-		this->ike_cfg = peer_cfg->get_ike_cfg(peer_cfg);
-		this->ike_cfg->get_ref(this->ike_cfg);
-	}
+	DESTROY_IF(this->ike_cfg);
+	this->ike_cfg = peer_cfg->get_ike_cfg(peer_cfg);
+	this->ike_cfg->get_ref(this->ike_cfg);
 
 	this->if_id_in = peer_cfg->get_if_id(peer_cfg, TRUE);
 	this->if_id_out = peer_cfg->get_if_id(peer_cfg, FALSE);
@@ -643,21 +642,9 @@ METHOD(ike_sa_t, get_message_id, uint32_t,
  */
 static void set_dscp(private_ike_sa_t *this, packet_t *packet)
 {
-	ike_cfg_t *ike_cfg;
-
-	/* prefer IKE config on peer_cfg, as its selection is more accurate
-	 * then the initial IKE config */
-	if (this->peer_cfg)
+	if (this->ike_cfg)
 	{
-		ike_cfg = this->peer_cfg->get_ike_cfg(this->peer_cfg);
-	}
-	else
-	{
-		ike_cfg = this->ike_cfg;
-	}
-	if (ike_cfg)
-	{
-		packet->set_dscp(packet, ike_cfg->get_dscp(ike_cfg));
+		packet->set_dscp(packet, this->ike_cfg->get_dscp(this->ike_cfg));
 	}
 }
 
@@ -905,6 +892,11 @@ METHOD(ike_sa_t, set_state, void,
 					job = (job_t*)rekey_ike_sa_job_create(this->ike_sa_id, TRUE);
 					lib->scheduler->schedule_job(lib->scheduler, job, t);
 					DBG1(DBG_IKE, "scheduling reauthentication in %ds", t);
+				}
+				else if (this->stats[STAT_REAUTH])
+				{
+					t = this->stats[STAT_REAUTH] - this->stats[STAT_ESTABLISHED];
+					DBG1(DBG_IKE, "reauthentication already scheduled in %ds", t);
 				}
 				t = this->peer_cfg->get_over_time(this->peer_cfg);
 				if (this->stats[STAT_REKEY] || this->stats[STAT_REAUTH])
@@ -1549,19 +1541,17 @@ METHOD(ike_sa_t, initiate, status_t,
 #endif /* ME */
 			)
 		{
-			char *addr;
-
-			addr = this->ike_cfg->get_other_addr(this->ike_cfg);
 			if (!this->retry_initiate_interval)
 			{
 				DBG1(DBG_IKE, "unable to resolve %s, initiate aborted",
-					 addr);
+					 this->ike_cfg->get_other_addr(this->ike_cfg));
 				DESTROY_IF(child_cfg);
 				charon->bus->alert(charon->bus, ALERT_PEER_ADDR_FAILED);
 				return DESTROY_ME;
 			}
 			DBG1(DBG_IKE, "unable to resolve %s, retrying in %ds",
-				 addr, this->retry_initiate_interval);
+				 this->ike_cfg->get_other_addr(this->ike_cfg),
+				 this->retry_initiate_interval);
 			defer_initiate = TRUE;
 		}
 
@@ -1882,6 +1872,7 @@ METHOD(ike_sa_t, delete_, status_t,
 	{
 		case IKE_ESTABLISHED:
 		case IKE_REKEYING:
+		case IKE_REKEYED:
 			if (time_monotonic(NULL) >= this->stats[STAT_DELETE] &&
 				!(this->version == IKEV1 && this->state == IKE_REKEYING))
 			{	/* IKE_SA hard lifetime hit, ignored for reauthenticated
@@ -1972,13 +1963,13 @@ METHOD(ike_sa_t, reauth, status_t,
 	if (!has_condition(this, COND_ORIGINAL_INITIATOR) &&
 		!ike_sa_can_reauthenticate(&this->public))
 	{
-		time_t del, now;
-
-		del = this->stats[STAT_DELETE];
-		now = time_monotonic(NULL);
+#if DEBUG_LEVEL >= 1
+		time_t del = this->stats[STAT_DELETE];
+		time_t now = time_monotonic(NULL);
 		DBG1(DBG_IKE, "initiator did not reauthenticate as requested, IKE_SA "
 			 "%s[%d] will timeout in %V", get_name(this), this->unique_id,
 			 &now, &del);
+#endif
 		return FAILED;
 	}
 	DBG0(DBG_IKE, "reauthenticating IKE_SA %s[%d]",
@@ -2076,7 +2067,7 @@ static status_t reestablish_children(private_ike_sa_t *this, ike_sa_t *new,
 		if (action & ACTION_START)
 		{
 			child_init_args_t args = {
-				.reqid = child_sa->get_reqid(child_sa),
+				.reqid = child_sa->get_reqid_ref(child_sa),
 				.label = child_sa->get_label(child_sa),
 			};
 			child_cfg = child_sa->get_config(child_sa);
@@ -2085,6 +2076,10 @@ static status_t reestablish_children(private_ike_sa_t *this, ike_sa_t *new,
 			other->task_manager->queue_child(other->task_manager,
 											 child_cfg->get_ref(child_cfg),
 											 &args);
+			if (args.reqid)
+			{
+				charon->kernel->release_reqid(charon->kernel, args.reqid);
+			}
 		}
 	}
 	enumerator->destroy(enumerator);
@@ -2389,7 +2384,11 @@ METHOD(ike_sa_t, handle_redirect, bool,
 	switch (this->state)
 	{
 		case IKE_CONNECTING:
-			return redirect_connecting(this, gateway);
+			if (!has_condition(this, COND_AUTHENTICATED))
+			{
+				return redirect_connecting(this, gateway);
+			}
+			/* fall-through during IKE_AUTH if authenticated */
 		case IKE_ESTABLISHED:
 			return redirect_established(this, gateway);
 		default:
@@ -3030,7 +3029,7 @@ METHOD(ike_sa_t, destroy, void,
 	}
 	/* uninstall CHILD_SAs before virtual IPs, otherwise we might kill
 	 * routes that the CHILD_SA tries to uninstall. */
-	while (array_remove(this->child_sas, ARRAY_TAIL, &child_sa))
+	while (array_remove(this->child_sas, ARRAY_HEAD, &child_sa))
 	{
 		charon->child_sa_manager->remove(charon->child_sa_manager, child_sa);
 		child_sa->destroy(child_sa);
@@ -3230,7 +3229,7 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 		.my_auths = array_create(0, 0),
 		.other_auths = array_create(0, 0),
 		.attributes = array_create(sizeof(attribute_entry_t), 0),
-		.unique_id = ref_get(&unique_id),
+		.unique_id = ref_get_nonzero(&unique_id),
 		.keepalive_interval = lib->settings->get_time(lib->settings,
 								"%s.keep_alive", KEEPALIVE_INTERVAL, lib->ns),
 		.keepalive_dpd_margin = lib->settings->get_time(lib->settings,

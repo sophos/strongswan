@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Andreas Steffen
- * HSR Hochschule fuer Technik Rapperswil
+ *
+ * Copyright (C) secunet Security Networks AG
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -153,7 +154,7 @@ METHOD(pb_tnc_msg_t, process, status_t,
 		{
 			DBG1(DBG_TNC, "insufficient data for remediation string");
 			goto end;
-		};
+		}
 		*offset += 4;
 
 		pos = memchr(this->string.ptr, '\0', this->string.len);
@@ -169,7 +170,7 @@ METHOD(pb_tnc_msg_t, process, status_t,
 		{
 			DBG1(DBG_TNC, "insufficient data for remediation string lang code");
 			goto end;
-		};
+		}
 		*offset += 1;
 
 		pos = memchr(this->lang_code.ptr, '\0', this->lang_code.len);
